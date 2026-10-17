@@ -37,7 +37,7 @@
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 【已修復】顯示熱區的紅色圓圈 */
+        /* 【核心修復】顯示熱區 */
         .hotspot-visual { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             background: rgba(255, 0, 0, 0.3); border: 2px solid red; 
@@ -45,7 +45,7 @@
             display: none; z-index: 4; align-items: center; justify-content: center; 
             color: white; font-weight: bold; font-size: 1.2rem; 
         }
-        /* 👇 這就是之前漏掉的地方！讓熱區跟著轉 */
+        /* 強制讓紅圈跟著圖片旋轉！ */
         .player-area.left .hotspot-visual { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hotspot-visual { transform: translate(-50%, -50%) rotate(-90deg); }
 
@@ -108,6 +108,7 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
+        // 你提供的精準座標
         const virtualHotspots = [
             { x: 0.187, y: 0.81, r: 0.12 },
             { x: 0.189, y: 0.5, r: 0.12 },
@@ -181,7 +182,7 @@
                     div.className = 'hotspot-visual';
                     div.style.left = `${spot.x * 100}%`;
                     div.style.top = `${spot.y * 100}%`;
-                    div.style.width = `${spot.r * 2 * 100}%`; 
+                    div.style.width = `${spot.r * 2 * 100}%`; // 正確的直徑
                     div.innerText = index;
                     div.style.display = showHotspots ? 'flex' : 'none';
                     return div;
@@ -240,7 +241,6 @@
 
             let clickX, clickY;
 
-            // 座標矩陣反轉
             if (isPlayerA) {
                 clickX = displayY;
                 clickY = 1 - displayX;
