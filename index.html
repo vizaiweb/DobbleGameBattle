@@ -32,12 +32,14 @@
         .player-area.right .card-rotator { transform: rotate(-90deg); }
         .card-rotator img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
+        /* 除錯熱區顯示 (加入顯示單字的功能) */
         .hotspot-visual { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
-            background: rgba(255, 0, 0, 0.3); border: 2px solid red; 
+            background: rgba(255, 0, 0, 0.4); border: 2px solid red; 
             transform: translate(-50%, -50%); pointer-events: none; 
-            display: none; z-index: 4; align-items: center; justify-content: center; 
-            color: white; font-weight: bold; font-size: 1.2rem; 
+            display: none; z-index: 4; align-items: center; justify-content: center; flex-direction: column;
+            color: white; font-weight: bold; font-size: 1rem; text-align: center; 
+            text-shadow: 1px 1px 2px black; padding: 5px; word-break: break-word; line-height: 1.1;
         }
 
         .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -50%); }
@@ -56,7 +58,7 @@
             <label>Theme:</label>
             <select id="themeSelect"></select>
         </div>
-        <button class="btn" id="toggleHotspotBtn">👁️ Show Hotspots</button>
+        <button class="btn" id="toggleHotspotBtn">👁️ Show Debug Info</button>
         <button class="btn" id="resetBtn">🔄 Restart Game</button>
     </div>
 
@@ -113,16 +115,16 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 【核心修正】完全依照你圖片的排版順序：左上、中上、右上、左中、正中、右中、左下、右下
+        // 【核心修正】保留你提供的精準座標，但陣列順序改為「左上、中上、右上、左中、正中、右中、左下、右下」以完美對齊 JSON
         const virtualHotspots = [
-            { x: 0.19, y: 0.19, r: 0.12 }, // 0: 左上
-            { x: 0.50, y: 0.19, r: 0.12 }, // 1: 中上
-            { x: 0.81, y: 0.19, r: 0.12 }, // 2: 右上
-            { x: 0.19, y: 0.50, r: 0.12 }, // 3: 左中
-            { x: 0.50, y: 0.50, r: 0.18 }, // 4: 正中 (最大)
-            { x: 0.81, y: 0.50, r: 0.12 }, // 5: 右中
-            { x: 0.19, y: 0.81, r: 0.12 }, // 6: 左下
-            { x: 0.81, y: 0.81, r: 0.12 }  // 7: 右下
+            { x: 0.190, y: 0.189, r: 0.12 }, // 0: 左上
+            { x: 0.501, y: 0.190, r: 0.12 }, // 1: 中上
+            { x: 0.808, y: 0.192, r: 0.12 }, // 2: 右上
+            { x: 0.189, y: 0.500, r: 0.12 }, // 3: 左中
+            { x: 0.498, y: 0.628, r: 0.17 }, // 4: 正中 (調回你之前的位置)
+            { x: 0.809, y: 0.500, r: 0.12 }, // 5: 右中
+            { x: 0.187, y: 0.810, r: 0.12 }, // 6: 左下
+            { x: 0.812, y: 0.811, r: 0.12 }  // 7: 右下
         ];
 
         settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('active'));
@@ -182,18 +184,27 @@
             containerA.innerHTML = ''; containerB.innerHTML = '';
 
             virtualHotspots.forEach((spot, index) => {
-                const createSpot = () => {
-                    const div = document.createElement('div');
-                    div.className = 'hotspot-visual';
-                    div.style.left = `${spot.x * 100}%`;
-                    div.style.top = `${spot.y * 100}%`;
-                    div.style.width = `${spot.r * 2 * 100}%`;
-                    div.innerText = index;
-                    div.style.display = showHotspots ? 'flex' : 'none';
-                    return div;
-                };
-                containerA.appendChild(createSpot());
-                containerB.appendChild(createSpot());
+                // A 的熱區
+                const divA = document.createElement('div');
+                divA.className = 'hotspot-visual';
+                divA.style.left = `${spot.x * 100}%`;
+                divA.style.top = `${spot.y * 100}%`;
+                divA.style.width = `${spot.r * 2 * 100}%`;
+                // 顯示編號與對應單字
+                divA.innerHTML = `<span>${index}</span><span style="font-size:0.7rem; color:yellow;">${cardA_Data ? cardA_Data[index] : ''}</span>`;
+                divA.style.display = showHotspots ? 'flex' : 'none';
+                containerA.appendChild(divA);
+
+                // B 的熱區
+                const divB = document.createElement('div');
+                divB.className = 'hotspot-visual';
+                divB.style.left = `${spot.x * 100}%`;
+                divB.style.top = `${spot.y * 100}%`;
+                divB.style.width = `${spot.r * 2 * 100}%`;
+                // 顯示編號與對應單字
+                divB.innerHTML = `<span>${index}</span><span style="font-size:0.7rem; color:yellow;">${cardB_Data ? cardB_Data[index] : ''}</span>`;
+                divB.style.display = showHotspots ? 'flex' : 'none';
+                containerB.appendChild(divB);
             });
         }
 
@@ -203,7 +214,7 @@
             document.querySelectorAll('.hotspot-visual').forEach(el => {
                 el.style.display = showHotspots ? 'flex' : 'none';
             });
-            toggleHotspotBtn.innerText = showHotspots ? '👁️ Hide Hotspots' : '👁️ Show Hotspots';
+            toggleHotspotBtn.innerText = showHotspots ? '👁️ Hide Debug Info' : '👁️ Show Debug Info';
         });
 
         function nextRound() {
@@ -274,8 +285,8 @@
             const hitWord = cardData[hitIndex];
             effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; 
 
-            // 開啟 Console 可以清楚看到你點的位置與程式判斷的單字
-            console.log(`[點擊] 熱區 ${hitIndex}，單字: "${hitWord}"，共同單字: "${commonWord}"`);
+            // 在 Console 印出詳細判定資訊
+            console.log(`[判定] 點擊熱區 ${hitIndex} | 程式判定單字: "${hitWord}" | 本局共同單字: "${commonWord}"`);
 
             if (hitWord === commonWord) {
                 effect.className = 'hit-effect correct';
