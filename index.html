@@ -51,9 +51,15 @@
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
 
         /* --- 標註模式專用 UI --- */
-        .editor-panel { position: fixed; top: 80px; right: 20px; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 15px; z-index: 100; color: white; display: none; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .editor-panel { position: fixed; top: 80px; right: 20px; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 15px; z-index: 100; color: white; display: none; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .editor-panel h3 { margin: 0 0 10px 0; color: #e09d32; font-size: 1.1rem; }
-        .editor-panel p { font-size: 0.8rem; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
+        .editor-panel p { font-size: 0.85rem; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
+        
+        /* 滑桿樣式 */
+        .slider-container { margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; }
+        .slider-container label { display: flex; justify-content: space-between; font-weight: bold; color: #00aaff; margin-bottom: 5px; font-size: 0.9rem;}
+        input[type=range] { width: 100%; cursor: pointer; }
+
         .editor-panel textarea { width: 100%; height: 120px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
         .editor-panel .btn { display: block; width: 100%; margin-bottom: 8px; padding: 10px; font-size: 0.9rem; }
         
@@ -78,7 +84,6 @@
                 <img id="imgA" src="" alt="Card A">
                 <div class="hit-effect" id="hitEffectA"></div>
                 <div id="hotspotsA"></div>
-                <!-- 標註點會插入到這個容器 -->
                 <div id="editorLayerA"></div>
             </div>
         </div>
@@ -96,8 +101,14 @@
     <!-- 標註工具面板 -->
     <div class="editor-panel" id="editorPanel">
         <h3>🛠️ 熱區標註工具</h3>
-        <p>1. 在「玩家 A」的圖片上點擊新增圓圈。<br>2. 拖曳圓圈移動位置。<br>3. 用滑鼠滾輪縮放圓圈大小。</p>
-        <p style="color: #e09d32;">目前熱區半徑大小：<span id="radiusDisplay">0.15</span></p>
+        <p>1. 在「玩家 A」圖片點擊新增。<br>2. 拖曳藍圈移動位置。</p>
+        
+        <!-- 新增的滑桿 -->
+        <div class="slider-container">
+            <label>圓圈半徑大小 <span id="radiusDisplay">0.15</span></label>
+            <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.15">
+        </div>
+
         <button class="btn" id="clearEditorBtn" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">🗑️ 清除所有圓圈</button>
         <textarea id="jsonOutput" readonly placeholder="產生的 JSON 會顯示在這裡..."></textarea>
         <button class="btn" id="copyJsonBtn">📋 複製 JSON</button>
@@ -132,7 +143,7 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 預設的熱區 (可以先留空，或是填入你之前抓好的)
+        // 預設熱區
         let virtualHotspots = [
             { x: 0.22, y: 0.22 }, { x: 0.50, y: 0.22 }, { x: 0.78, y: 0.22 },
             { x: 0.22, y: 0.48 }, { x: 0.50, y: 0.50 }, { x: 0.78, y: 0.48 },
@@ -210,6 +221,7 @@
                     div.className = 'hotspot-visual';
                     div.style.left = `${spot.x * 100}%`;
                     div.style.top = `${spot.y * 100}%`;
+                    div.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`; // 套用半徑
                     div.innerText = index;
                     div.style.display = 'flex';
                     div.style.alignItems = 'center';
@@ -225,7 +237,6 @@
         }
 
         let showHotspots = false;
-        // 將原本的顯示熱區按鈕改為測試用
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'btn';
         toggleBtn.innerText = '👁️ 顯示熱區';
@@ -312,6 +323,7 @@
 
             effect.style.left = `${displayX * 100}%`;
             effect.style.top = `${displayY * 100}%`;
+            effect.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`; // 特效套用半徑
 
             if (hitWord === commonWord) {
                 effect.className = 'hit-effect correct';
@@ -352,7 +364,19 @@
         const editorLayerA = document.getElementById('editorLayerA');
         const jsonOutput = document.getElementById('jsonOutput');
         const radiusDisplay = document.getElementById('radiusDisplay');
+        const radiusSlider = document.getElementById('radiusSlider');
         let draggedDot = null;
+
+        // 滑桿事件
+        radiusSlider.addEventListener('input', (e) => {
+            HOTSPOT_RADIUS = parseFloat(e.target.value);
+            radiusDisplay.innerText = HOTSPOT_RADIUS.toFixed(2);
+            
+            // 即時更新所有藍圈的大小
+            document.querySelectorAll('.editor-dot').forEach(dot => {
+                dot.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
+            });
+        });
 
         editorToggleBtn.addEventListener('click', () => {
             isEditing = !isEditing;
@@ -360,13 +384,13 @@
             editorPanel.style.display = isEditing ? 'block' : 'none';
             
             if (isEditing) {
-                // 進入標註模式時，隱藏左邊的圖片，讓玩家 A 的區域變成標註畫布
                 editorLayerA.style.display = 'block';
                 renderEditorDots();
                 updateJsonOutput();
             } else {
                 editorLayerA.style.display = 'none';
                 editorLayerA.innerHTML = '';
+                drawHotspots(); // 還原遊戲紅圈
             }
         });
 
@@ -380,7 +404,6 @@
                 div.innerText = index;
                 div.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
                 
-                // 拖曳事件
                 div.addEventListener('pointerdown', (e) => {
                     e.stopPropagation();
                     draggedDot = { element: div, index: index };
@@ -394,22 +417,18 @@
                     const container = document.getElementById('cardContainerA');
                     const rect = container.getBoundingClientRect();
                     
-                    // 因為圖片旋轉了 90 度，我們要把拖曳的座標反推回原始座標
                     let displayX = (e.clientX - rect.left) / rect.width;
                     let displayY = (e.clientY - rect.top) / rect.height;
                     
-                    // 限制在 0~1 之間
                     displayX = Math.max(0, Math.min(1, displayX));
                     displayY = Math.max(0, Math.min(1, displayY));
 
-                    // 玩家 A 旋轉矩陣反推
                     let originalX = displayY;
                     let originalY = 1 - displayX;
 
                     virtualHotspots[index].x = originalX;
                     virtualHotspots[index].y = originalY;
 
-                    // 更新視覺位置 (這裡直接用 displayX, displayY 因為 CSS 的旋轉已經幫我們處理了渲染)
                     div.style.left = `${displayX * 100}%`;
                     div.style.top = `${displayY * 100}%`;
                     
@@ -435,7 +454,6 @@
             let displayX = (e.clientX - rect.left) / rect.width;
             let displayY = (e.clientY - rect.top) / rect.height;
 
-            // 反推回原始座標
             let originalX = displayY;
             let originalY = 1 - displayX;
 
@@ -446,25 +464,6 @@
             } else {
                 alert("最多只能有 8 個熱區！");
             }
-        });
-
-        // 滑鼠滾輪調整半徑
-        document.getElementById('cardContainerA').addEventListener('wheel', (e) => {
-            if (!isEditing) return;
-            e.preventDefault();
-            if (e.deltaY < 0) {
-                HOTSPOT_RADIUS += 0.01;
-            } else {
-                HOTSPOT_RADIUS -= 0.01;
-            }
-            HOTSPOT_RADIUS = Math.max(0.05, Math.min(0.3, HOTSPOT_RADIUS)); // 限制範圍
-            radiusDisplay.innerText = HOTSPOT_RADIUS.toFixed(2);
-            
-            // 更新所有圓圈大小
-            document.querySelectorAll('.editor-dot').forEach(dot => {
-                dot.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
-            });
-            updateJsonOutput();
         });
 
         function updateJsonOutput() {
