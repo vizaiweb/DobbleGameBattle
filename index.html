@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble 雙人對戰 - 精準座標測試版</title>
+    <title>Dobble 雙人對戰與熱區標註</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
@@ -14,7 +14,8 @@
         #themeSelect { padding: 8px 15px; border-radius: 20px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; }
         .btn { background: #e09d32; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 #7b4a1a; transition: 0.1s; font-family: inherit; }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7b4a1a; }
-        
+        .btn.active { background: #4CAF50; box-shadow: 0 4px 0 #2E7D32; }
+
         /* 遊戲主容器 */
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
@@ -30,14 +31,14 @@
         .player-area.right .card-container img { transform: rotate(-90deg) scale(1); }
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 點擊回饋特效 (圓形) */
+        /* 點擊回饋特效 */
         .hit-effect { position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
         .player-area.left .hit-effect { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 熱區顯示圈 (除錯用) */
+        /* 熱區顯示圈 */
         .hotspot-visual {
             position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%;
             background: rgba(255, 0, 0, 0.2); border: 2px solid red;
@@ -48,6 +49,17 @@
         .player-area.right .hotspot-visual { transform: translate(-50%, -50%) rotate(-90deg); }
 
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
+
+        /* --- 標註模式專用 UI --- */
+        .editor-panel { position: fixed; top: 80px; right: 20px; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 15px; z-index: 100; color: white; display: none; width: 300px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .editor-panel h3 { margin: 0 0 10px 0; color: #e09d32; font-size: 1.1rem; }
+        .editor-panel p { font-size: 0.8rem; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
+        .editor-panel textarea { width: 100%; height: 120px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
+        .editor-panel .btn { display: block; width: 100%; margin-bottom: 8px; padding: 10px; font-size: 0.9rem; }
+        
+        /* 標註模式下的可拖曳圓圈 */
+        .editor-dot { position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%; background: rgba(0, 150, 255, 0.3); border: 2px solid #00aaff; transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem; z-index: 15; }
+        .editor-dot.dragging { cursor: grabbing; background: rgba(0, 255, 0, 0.3); border-color: #00ff00; }
     </style>
 </head>
 <body>
@@ -55,7 +67,7 @@
     <div class="top-bar">
         <label>主題：</label>
         <select id="themeSelect"></select>
-        <button class="btn" id="toggleHotspotBtn">👁️ 顯示熱區</button>
+        <button class="btn" id="editorToggleBtn">🛠️ 標註模式</button>
         <button class="btn" id="resetBtn">🔄 重新開始</button>
     </div>
 
@@ -66,6 +78,8 @@
                 <img id="imgA" src="" alt="Card A">
                 <div class="hit-effect" id="hitEffectA"></div>
                 <div id="hotspotsA"></div>
+                <!-- 標註點會插入到這個容器 -->
+                <div id="editorLayerA"></div>
             </div>
         </div>
 
@@ -79,9 +93,23 @@
         </div>
     </div>
 
+    <!-- 標註工具面板 -->
+    <div class="editor-panel" id="editorPanel">
+        <h3>🛠️ 熱區標註工具</h3>
+        <p>1. 在「玩家 A」的圖片上點擊新增圓圈。<br>2. 拖曳圓圈移動位置。<br>3. 用滑鼠滾輪縮放圓圈大小。</p>
+        <p style="color: #e09d32;">目前熱區半徑大小：<span id="radiusDisplay">0.15</span></p>
+        <button class="btn" id="clearEditorBtn" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">🗑️ 清除所有圓圈</button>
+        <textarea id="jsonOutput" readonly placeholder="產生的 JSON 會顯示在這裡..."></textarea>
+        <button class="btn" id="copyJsonBtn">📋 複製 JSON</button>
+        <button class="btn" id="importJsonBtn" style="background: #3498db; box-shadow: 0 4px 0 #2980b9;">📥 匯入舊 JSON (貼在上方後點擊)</button>
+    </div>
+
     <div class="center-message" id="centerMsg">遊戲開始！</div>
 
     <script>
+        // ==========================================
+        // 全局狀態
+        // ==========================================
         let currentThemeId = null;
         let wordBank = [];
         let currentCards = [];
@@ -100,24 +128,21 @@
         const scoreAElem = document.getElementById('scoreA');
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
-        const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
         
-        // 【核心修改】精準的 8 個圖案座標 (對應截圖中的佈局)
-        const virtualHotspots = [
-            { x: 0.22, y: 0.22 }, // 0: 左上
-            { x: 0.50, y: 0.22 }, // 1: 中上
-            { x: 0.78, y: 0.22 }, // 2: 右上
-            { x: 0.22, y: 0.48 }, // 3: 中左
-            { x: 0.50, y: 0.50 }, // 4: 正中 (阿根廷)
-            { x: 0.78, y: 0.48 }, // 5: 中右
-            { x: 0.22, y: 0.78 }, // 6: 左下
-            { x: 0.50, y: 0.78 }  // 7: 中下
-        ];
-        const HOTSPOT_RADIUS = 0.15; // 圓形判定半徑 (大約涵蓋一個國旗)
-
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
+        // 預設的熱區 (可以先留空，或是填入你之前抓好的)
+        let virtualHotspots = [
+            { x: 0.22, y: 0.22 }, { x: 0.50, y: 0.22 }, { x: 0.78, y: 0.22 },
+            { x: 0.22, y: 0.48 }, { x: 0.50, y: 0.50 }, { x: 0.78, y: 0.48 },
+            { x: 0.22, y: 0.78 }, { x: 0.50, y: 0.78 }
+        ];
+        let HOTSPOT_RADIUS = 0.15;
+
+        // ==========================================
+        // 初始化與載入資料
+        // ==========================================
         async function init() {
             try {
                 const res = await fetch('sets/index.json');
@@ -143,19 +168,18 @@
             try {
                 const res = await fetch(`sets/${themeId}.json`);
                 const data = await res.json();
-                
                 wordBank = data.wordBank;
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData.map(indices => indices.map(idx => wordBank[idx]));
-                
                 resetGame();
             } catch (e) {
                 console.error(`載入 ${themeId}.json 失敗`, e);
-                centerMsg.textContent = `載入主題 ${themeId} 失敗`;
-                centerMsg.style.display = 'block';
             }
         }
 
+        // ==========================================
+        // 遊戲核心邏輯
+        // ==========================================
         function resetGame() {
             scoreA = 0; scoreB = 0;
             scoreAElem.innerText = scoreA;
@@ -201,12 +225,18 @@
         }
 
         let showHotspots = false;
-        toggleHotspotBtn.addEventListener('click', () => {
+        // 將原本的顯示熱區按鈕改為測試用
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'btn';
+        toggleBtn.innerText = '👁️ 顯示熱區';
+        toggleBtn.style.marginLeft = '10px';
+        document.querySelector('.top-bar').appendChild(toggleBtn);
+        toggleBtn.addEventListener('click', () => {
             showHotspots = !showHotspots;
             document.querySelectorAll('.hotspot-visual').forEach(el => {
                 el.style.display = showHotspots ? 'flex' : 'none';
             });
-            toggleHotspotBtn.innerText = showHotspots ? '👁️ 隱藏熱區' : '👁️ 顯示熱區';
+            toggleBtn.innerText = showHotspots ? '👁️ 隱藏熱區' : '👁️ 顯示熱區';
         });
 
         function nextRound() {
@@ -234,10 +264,14 @@
             drawHotspots();
             const displayMode = showHotspots ? 'flex' : 'none';
             document.querySelectorAll('.hotspot-visual').forEach(el => el.style.display = displayMode);
+
+            if (isEditing) {
+                renderEditorDots();
+            }
         }
 
         function handlePlayerClick(event, player) {
-            if (!roundActive) return;
+            if (!roundActive || isEditing) return;
 
             const isPlayerA = (player === 'A');
             const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
@@ -259,7 +293,6 @@
                 clickY = displayX;
             }
 
-            // 【核心修改】圓形距離碰撞檢測
             let hitIndex = -1;
             let minDistance = Infinity;
 
@@ -267,14 +300,13 @@
                 const dx = clickX - spot.x;
                 const dy = clickY - spot.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
-                // 如果點擊距離小於半徑，且在目前命中的熱區中距離最近
                 if (dist <= HOTSPOT_RADIUS && dist < minDistance) {
                     minDistance = dist;
                     hitIndex = index;
                 }
             });
 
-            if (hitIndex === -1) return; // 點擊到國旗之間的空白處
+            if (hitIndex === -1) return; 
 
             const hitWord = cardData[hitIndex];
 
@@ -311,6 +343,167 @@
             centerMsg.style.display = 'block';
         }
 
+        // ==========================================
+        // 🛠️ 標註工具邏輯
+        // ==========================================
+        let isEditing = false;
+        const editorToggleBtn = document.getElementById('editorToggleBtn');
+        const editorPanel = document.getElementById('editorPanel');
+        const editorLayerA = document.getElementById('editorLayerA');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const radiusDisplay = document.getElementById('radiusDisplay');
+        let draggedDot = null;
+
+        editorToggleBtn.addEventListener('click', () => {
+            isEditing = !isEditing;
+            editorToggleBtn.classList.toggle('active', isEditing);
+            editorPanel.style.display = isEditing ? 'block' : 'none';
+            
+            if (isEditing) {
+                // 進入標註模式時，隱藏左邊的圖片，讓玩家 A 的區域變成標註畫布
+                editorLayerA.style.display = 'block';
+                renderEditorDots();
+                updateJsonOutput();
+            } else {
+                editorLayerA.style.display = 'none';
+                editorLayerA.innerHTML = '';
+            }
+        });
+
+        function renderEditorDots() {
+            editorLayerA.innerHTML = '';
+            virtualHotspots.forEach((spot, index) => {
+                const div = document.createElement('div');
+                div.className = 'editor-dot';
+                div.style.left = `${spot.x * 100}%`;
+                div.style.top = `${spot.y * 100}%`;
+                div.innerText = index;
+                div.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
+                
+                // 拖曳事件
+                div.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    draggedDot = { element: div, index: index };
+                    div.classList.add('dragging');
+                    div.setPointerCapture(e.pointerId);
+                });
+
+                div.addEventListener('pointermove', (e) => {
+                    if (!draggedDot || draggedDot.index !== index) return;
+                    
+                    const container = document.getElementById('cardContainerA');
+                    const rect = container.getBoundingClientRect();
+                    
+                    // 因為圖片旋轉了 90 度，我們要把拖曳的座標反推回原始座標
+                    let displayX = (e.clientX - rect.left) / rect.width;
+                    let displayY = (e.clientY - rect.top) / rect.height;
+                    
+                    // 限制在 0~1 之間
+                    displayX = Math.max(0, Math.min(1, displayX));
+                    displayY = Math.max(0, Math.min(1, displayY));
+
+                    // 玩家 A 旋轉矩陣反推
+                    let originalX = displayY;
+                    let originalY = 1 - displayX;
+
+                    virtualHotspots[index].x = originalX;
+                    virtualHotspots[index].y = originalY;
+
+                    // 更新視覺位置 (這裡直接用 displayX, displayY 因為 CSS 的旋轉已經幫我們處理了渲染)
+                    div.style.left = `${displayX * 100}%`;
+                    div.style.top = `${displayY * 100}%`;
+                    
+                    updateJsonOutput();
+                });
+
+                div.addEventListener('pointerup', (e) => {
+                    if (draggedDot) {
+                        draggedDot.element.classList.remove('dragging');
+                        draggedDot = null;
+                    }
+                });
+
+                editorLayerA.appendChild(div);
+            });
+        }
+
+        // 點擊空白處新增圓圈
+        document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => {
+            if (!isEditing || draggedDot) return;
+            
+            const rect = e.currentTarget.getBoundingClientRect();
+            let displayX = (e.clientX - rect.left) / rect.width;
+            let displayY = (e.clientY - rect.top) / rect.height;
+
+            // 反推回原始座標
+            let originalX = displayY;
+            let originalY = 1 - displayX;
+
+            if (virtualHotspots.length < 8) {
+                virtualHotspots.push({ x: originalX, y: originalY });
+                renderEditorDots();
+                updateJsonOutput();
+            } else {
+                alert("最多只能有 8 個熱區！");
+            }
+        });
+
+        // 滑鼠滾輪調整半徑
+        document.getElementById('cardContainerA').addEventListener('wheel', (e) => {
+            if (!isEditing) return;
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                HOTSPOT_RADIUS += 0.01;
+            } else {
+                HOTSPOT_RADIUS -= 0.01;
+            }
+            HOTSPOT_RADIUS = Math.max(0.05, Math.min(0.3, HOTSPOT_RADIUS)); // 限制範圍
+            radiusDisplay.innerText = HOTSPOT_RADIUS.toFixed(2);
+            
+            // 更新所有圓圈大小
+            document.querySelectorAll('.editor-dot').forEach(dot => {
+                dot.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
+            });
+            updateJsonOutput();
+        });
+
+        function updateJsonOutput() {
+            jsonOutput.value = JSON.stringify(virtualHotspots.map(s => ({
+                x: Number(s.x.toFixed(3)),
+                y: Number(s.y.toFixed(3))
+            })), null, 2);
+        }
+
+        document.getElementById('clearEditorBtn').addEventListener('click', () => {
+            if(confirm("確定要清空所有點嗎？")) {
+                virtualHotspots = [];
+                renderEditorDots();
+                updateJsonOutput();
+            }
+        });
+
+        document.getElementById('copyJsonBtn').addEventListener('click', () => {
+            jsonOutput.select();
+            document.execCommand('copy');
+            alert("已複製到剪貼簿！");
+        });
+
+        document.getElementById('importJsonBtn').addEventListener('click', () => {
+            try {
+                const parsed = JSON.parse(jsonOutput.value);
+                if (Array.isArray(parsed)) {
+                    virtualHotspots = parsed;
+                    renderEditorDots();
+                    alert("匯入成功！");
+                }
+            } catch (e) {
+                alert("JSON 格式錯誤！");
+            }
+        });
+
+        // ==========================================
+        // 綁定事件與啟動
+        // ==========================================
         document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'A'));
         document.getElementById('cardContainerB').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'B'));
         document.getElementById('resetBtn').addEventListener('click', resetGame);
