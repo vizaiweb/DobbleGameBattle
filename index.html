@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble 雙人對戰 - 熱區測試版</title>
+    <title>Dobble 雙人對戰 - 精準座標測試版</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
@@ -22,28 +22,27 @@
         /* 計分板 */
         .score-board { position: absolute; top: -10px; font-size: 1.5rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 8px 24px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
-        /* 【放大】卡片容器 */
+        /* 卡片容器 */
         .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); background: #fff; cursor: pointer; }
         
-        /* 【視覺旋轉】 */
-        .player-area.left .card-container img { transform: rotate(90deg) scale(1); } /* 取消縮小 */
+        /* 視覺旋轉 */
+        .player-area.left .card-container img { transform: rotate(90deg) scale(1); }
         .player-area.right .card-container img { transform: rotate(-90deg) scale(1); }
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 點擊回饋特效 */
-        .hit-effect { position: absolute; width: 20%; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
+        /* 點擊回饋特效 (圓形) */
+        .hit-effect { position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
         .player-area.left .hit-effect { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 【新增】熱區顯示圈 */
+        /* 熱區顯示圈 (除錯用) */
         .hotspot-visual {
-            position: absolute; width: 22%; aspect-ratio: 1/1; border-radius: 50%;
-            background: rgba(255, 0, 0, 0.3); border: 2px solid red;
+            position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%;
+            background: rgba(255, 0, 0, 0.2); border: 2px solid red;
             transform: translate(-50%, -50%); pointer-events: none;
-            display: none; /* 預設隱藏 */
-            z-index: 4;
+            display: none; z-index: 4;
         }
         .player-area.left .hotspot-visual { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hotspot-visual { transform: translate(-50%, -50%) rotate(-90deg); }
@@ -66,7 +65,6 @@
             <div class="card-container" id="cardContainerA">
                 <img id="imgA" src="" alt="Card A">
                 <div class="hit-effect" id="hitEffectA"></div>
-                <!-- 熱區視覺化容器 -->
                 <div id="hotspotsA"></div>
             </div>
         </div>
@@ -76,7 +74,6 @@
             <div class="card-container" id="cardContainerB">
                 <img id="imgB" src="" alt="Card B">
                 <div class="hit-effect" id="hitEffectB"></div>
-                <!-- 熱區視覺化容器 -->
                 <div id="hotspotsB"></div>
             </div>
         </div>
@@ -105,12 +102,18 @@
         const centerMsg = document.getElementById('centerMsg');
         const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
         
-        // 虛擬 8 點熱區 (相對於「原始未旋轉」的圖片)
+        // 【核心修改】精準的 8 個圖案座標 (對應截圖中的佈局)
         const virtualHotspots = [
-            { x: 0.20, y: 0.20 }, { x: 0.50, y: 0.20 }, { x: 0.80, y: 0.20 },
-            { x: 0.20, y: 0.50 }, { x: 0.50, y: 0.50 }, { x: 0.80, y: 0.50 },
-            { x: 0.20, y: 0.80 }, { x: 0.50, y: 0.80 }, { x: 0.80, y: 0.80 }
+            { x: 0.22, y: 0.22 }, // 0: 左上
+            { x: 0.50, y: 0.22 }, // 1: 中上
+            { x: 0.78, y: 0.22 }, // 2: 右上
+            { x: 0.22, y: 0.48 }, // 3: 中左
+            { x: 0.50, y: 0.50 }, // 4: 正中 (阿根廷)
+            { x: 0.78, y: 0.48 }, // 5: 中右
+            { x: 0.22, y: 0.78 }, // 6: 左下
+            { x: 0.50, y: 0.78 }  // 7: 中下
         ];
+        const HOTSPOT_RADIUS = 0.15; // 圓形判定半徑 (大約涵蓋一個國旗)
 
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
@@ -171,7 +174,6 @@
             return null;
         }
 
-        // 繪製熱區圓圈
         function drawHotspots() {
             const containerA = document.getElementById('hotspotsA');
             const containerB = document.getElementById('hotspotsB');
@@ -179,43 +181,31 @@
             containerB.innerHTML = '';
 
             virtualHotspots.forEach((spot, index) => {
-                // 為 A 繪製
-                const divA = document.createElement('div');
-                divA.className = 'hotspot-visual';
-                divA.style.left = `${spot.x * 100}%`;
-                divA.style.top = `${spot.y * 100}%`;
-                divA.innerText = index; // 顯示編號方便除錯
-                divA.style.display = 'flex';
-                divA.style.alignItems = 'center';
-                divA.style.justifyContent = 'center';
-                divA.style.color = 'white';
-                divA.style.fontWeight = 'bold';
-                containerA.appendChild(divA);
-
-                // 為 B 繪製
-                const divB = document.createElement('div');
-                divB.className = 'hotspot-visual';
-                divB.style.left = `${spot.x * 100}%`;
-                divB.style.top = `${spot.y * 100}%`;
-                divB.innerText = index;
-                divB.style.display = 'flex';
-                divB.style.alignItems = 'center';
-                divB.style.justifyContent = 'center';
-                divB.style.color = 'white';
-                divB.style.fontWeight = 'bold';
-                containerB.appendChild(divB);
+                const createSpot = () => {
+                    const div = document.createElement('div');
+                    div.className = 'hotspot-visual';
+                    div.style.left = `${spot.x * 100}%`;
+                    div.style.top = `${spot.y * 100}%`;
+                    div.innerText = index;
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.justifyContent = 'center';
+                    div.style.color = 'white';
+                    div.style.fontWeight = 'bold';
+                    div.style.fontSize = '1.5rem';
+                    return div;
+                };
+                containerA.appendChild(createSpot());
+                containerB.appendChild(createSpot());
             });
         }
 
-        // 開關熱區顯示
         let showHotspots = false;
         toggleHotspotBtn.addEventListener('click', () => {
             showHotspots = !showHotspots;
-            const hotspotsA = document.querySelectorAll('#hotspotsA .hotspot-visual');
-            const hotspotsB = document.querySelectorAll('#hotspotsB .hotspot-visual');
-            
-            hotspotsA.forEach(el => el.style.display = showHotspots ? 'flex' : 'none');
-            hotspotsB.forEach(el => el.style.display = showHotspots ? 'flex' : 'none');
+            document.querySelectorAll('.hotspot-visual').forEach(el => {
+                el.style.display = showHotspots ? 'flex' : 'none';
+            });
             toggleHotspotBtn.innerText = showHotspots ? '👁️ 隱藏熱區' : '👁️ 顯示熱區';
         });
 
@@ -241,9 +231,7 @@
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
             
-            // 每次換卡時重新繪製熱區 (確保覆蓋在圖片上)
             drawHotspots();
-            // 維持原本的顯示狀態
             const displayMode = showHotspots ? 'flex' : 'none';
             document.querySelectorAll('.hotspot-visual').forEach(el => el.style.display = displayMode);
         }
@@ -271,19 +259,22 @@
                 clickY = displayX;
             }
 
+            // 【核心修改】圓形距離碰撞檢測
             let hitIndex = -1;
             let minDistance = Infinity;
+
             virtualHotspots.forEach((spot, index) => {
                 const dx = clickX - spot.x;
                 const dy = clickY - spot.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < minDistance) {
+                // 如果點擊距離小於半徑，且在目前命中的熱區中距離最近
+                if (dist <= HOTSPOT_RADIUS && dist < minDistance) {
                     minDistance = dist;
                     hitIndex = index;
                 }
             });
 
-            if (hitIndex === -1) return;
+            if (hitIndex === -1) return; // 點擊到國旗之間的空白處
 
             const hitWord = cardData[hitIndex];
 
