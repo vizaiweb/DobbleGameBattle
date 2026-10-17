@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble 雙人對戰 - 左右對戰版</title>
+    <title>Dobble 雙人對戰 - 左右 90 度視角版</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 頂部控制列 */
         .top-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.2); }
         .top-bar label { color: #fff; font-weight: bold; font-size: 0.9rem; }
         #themeSelect { padding: 8px 15px; border-radius: 20px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; }
         .btn { background: #e09d32; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 #7b4a1a; transition: 0.1s; font-family: inherit; }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7b4a1a; }
         
-        /* 遊戲主容器：左右分割 */
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 80px 20px 20px; }
-        
-        /* 玩家區域 */
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; max-height: 800px; }
         
-        /* 計分板 */
         .score-board { position: absolute; top: 0; font-size: 1.8rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 8px 24px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
-        /* 卡片容器：維持正方形，不旋轉圖片 */
+        /* 卡片容器 */
         .card-container { position: relative; width: 85%; max-width: 500px; aspect-ratio: 1/1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); background: #fff; cursor: pointer; }
+        
+        /* 【視覺旋轉】讓圖片旋轉 90 度與 -90 度 */
+        .player-area.left .card-container img { transform: rotate(90deg) scale(0.85); }
+        .player-area.right .card-container img { transform: rotate(-90deg) scale(0.85); }
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 點擊回饋特效 */
-        .hit-effect { position: absolute; width: 20%; aspect-ratio: 1/1; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
+        /* 【特效旋轉】讓點擊的圓圈特效也跟著視角旋轉 */
+        .hit-effect { position: absolute; width: 20%; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
+        .player-area.left .hit-effect { transform: translate(-50%, -50%) rotate(90deg); }
+        .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
+
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 中央訊息 */
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
     </style>
 </head>
@@ -46,7 +47,6 @@
     </div>
 
     <div class="game-board">
-        <!-- 玩家 A 區域 (左側) -->
         <div class="player-area left" id="playerA">
             <div class="score-board">玩家 A: <span id="scoreA">0</span></div>
             <div class="card-container" id="cardContainerA">
@@ -55,7 +55,6 @@
             </div>
         </div>
 
-        <!-- 玩家 B 區域 (右側) -->
         <div class="player-area right" id="playerB">
             <div class="score-board">玩家 B: <span id="scoreB">0</span></div>
             <div class="card-container" id="cardContainerB">
@@ -90,6 +89,7 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
+        // 虛擬 8 點熱區 (相對於「原始未旋轉」的圖片)
         const virtualHotspots = [
             { x: 0.20, y: 0.20 }, { x: 0.50, y: 0.20 }, { x: 0.80, y: 0.20 },
             { x: 0.20, y: 0.50 }, { x: 0.50, y: 0.50 }, { x: 0.80, y: 0.50 },
@@ -155,7 +155,7 @@
         function nextRound() {
             if (currentCards.length < 2) return;
 
-            // 限制 1~8 張防白卡，並確保有共同單字
+            // 限制只抽前 8 張，且確保有共同單字
             const testLimit = Math.min(8, currentCards.length);
             let idxA, idxB;
             do {
@@ -186,26 +186,24 @@
             
             const rect = container.getBoundingClientRect();
             
-            // 1. 取得玩家在螢幕上點擊的相對比例
+            // 1. 取得玩家在「旋轉後的螢幕」上點擊的相對比例
             let displayX = (event.clientX - rect.left) / rect.width;
             let displayY = (event.clientY - rect.top) / rect.height;
 
             let clickX, clickY;
 
-            // 2. 【核心矩陣變換】根據玩家在左或在右，換算成圖片的真實座標
+            // 2. 【核心矩陣變換】將旋轉後的點擊座標，反推回圖片的真實座標
             if (isPlayerA) {
-                // A 玩家在左邊，他的上方是圖片的左方。
-                // 把點擊點順時針旋轉 90 度回推
+                // A 玩家：圖片順時針旋轉 90 度
                 clickX = displayY;
                 clickY = 1 - displayX;
             } else {
-                // B 玩家在右邊，他的上方是圖片的右方。
-                // 把點擊點逆時針旋轉 90 度回推
+                // B 玩家：圖片逆時針旋轉 -90 度
                 clickX = 1 - displayY;
                 clickY = displayX;
             }
 
-            // 3. 尋找最近的虛擬熱區 (使用換算後的真實座標)
+            // 3. 在「真實圖片座標」中尋找最近的熱區
             let hitIndex = -1;
             let minDistance = Infinity;
             virtualHotspots.forEach((spot, index) => {
@@ -222,7 +220,7 @@
 
             const hitWord = cardData[hitIndex];
 
-            // 4. 顯示特效：直接顯示在「玩家點擊的螢幕位置」(displayX, displayY)
+            // 4. 顯示特效：直接顯示在玩家點擊的「螢幕位置」
             effect.style.left = `${displayX * 100}%`;
             effect.style.top = `${displayY * 100}%`;
 
