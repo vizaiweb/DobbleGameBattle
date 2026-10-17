@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble 雙人對戰與獨立熱區標註</title>
+    <title>Dobble 雙人對戰</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
@@ -37,34 +37,14 @@
         .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
+
+        /* 顯示熱區 (除錯用) */
+        .hotspot-visual { position: absolute; aspect-ratio: 1/1; border-radius: 50%; background: rgba(255, 0, 0, 0.2); border: 2px solid red; transform: translate(-50%, -50%); pointer-events: none; display: none; z-index: 4; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .player-area.left .hotspot-visual { transform: translate(-50%, -50%) rotate(90deg); }
+        .player-area.right .hotspot-visual { transform: translate(-50%, -50%) rotate(-90deg); }
         
         /* 中央訊息 */
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
-
-        /* --- 標註模式專用 UI --- */
-        .editor-panel { position: fixed; top: 80px; right: 20px; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 15px; z-index: 100; color: white; display: none; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .editor-panel h3 { margin: 0 0 10px 0; color: #e09d32; font-size: 1.1rem; }
-        .editor-panel p { font-size: 0.85rem; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
-        
-        /* 獨立滑桿容器 */
-        .slider-container { margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; display: none; }
-        .slider-container.active { display: block; }
-        .slider-container label { display: flex; justify-content: space-between; font-weight: bold; color: #00aaff; margin-bottom: 5px; font-size: 0.9rem;}
-        input[type=range] { width: 100%; cursor: pointer; }
-
-        .editor-panel textarea { width: 100%; height: 100px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
-        .editor-panel .btn { display: block; width: 100%; margin-bottom: 8px; padding: 10px; font-size: 0.9rem; }
-        
-        /* 標註模式下的可拖曳圓圈 */
-        .editor-dot { 
-            position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
-            background: rgba(0, 150, 255, 0.3); border: 2px solid #00aaff; 
-            transform: translate(-50%, -50%); cursor: grab; 
-            display: flex; align-items: center; justify-content: center; 
-            color: white; font-weight: bold; font-size: 1.2rem; z-index: 15; 
-        }
-        .editor-dot.dragging { cursor: grabbing; background: rgba(0, 255, 0, 0.3); border-color: #00ff00; }
-        .editor-dot.selected { border-color: #ffeb3b; background: rgba(255, 235, 59, 0.4); box-shadow: 0 0 15px #ffeb3b; z-index: 16; }
     </style>
 </head>
 <body>
@@ -72,7 +52,7 @@
     <div class="top-bar">
         <label>主題：</label>
         <select id="themeSelect"></select>
-        <button class="btn" id="editorToggleBtn">🛠️ 標註模式</button>
+        <button class="btn" id="toggleHotspotBtn">👁️ 顯示熱區</button>
         <button class="btn" id="resetBtn">🔄 重新開始</button>
     </div>
 
@@ -82,7 +62,7 @@
             <div class="card-container" id="cardContainerA">
                 <img id="imgA" src="" alt="Card A">
                 <div class="hit-effect" id="hitEffectA"></div>
-                <div id="editorLayerA"></div>
+                <div id="hotspotsA"></div>
             </div>
         </div>
 
@@ -91,25 +71,9 @@
             <div class="card-container" id="cardContainerB">
                 <img id="imgB" src="" alt="Card B">
                 <div class="hit-effect" id="hitEffectB"></div>
+                <div id="hotspotsB"></div>
             </div>
         </div>
-    </div>
-
-    <!-- 標註工具面板 -->
-    <div class="editor-panel" id="editorPanel">
-        <h3>🛠️ 熱區標註工具</h3>
-        <p>1. 在圖片點擊新增。<br>2. 點選圓圈後，可拖曳或拉滑桿。<br>3. 按鍵盤 Delete 可刪除選中的圓圈。</p>
-        
-        <!-- 獨立滑桿 -->
-        <div class="slider-container" id="sliderContainer">
-            <label>選中圓圈 (<span id="selectedIndexDisplay">-</span>) 半徑：<span id="radiusDisplay">0.15</span></label>
-            <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.15">
-        </div>
-
-        <button class="btn" id="clearEditorBtn" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">🗑️ 清除所有圓圈</button>
-        <textarea id="jsonOutput" readonly placeholder="產生的 JSON..."></textarea>
-        <button class="btn" id="copyJsonBtn">📋 複製 JSON</button>
-        <button class="btn" id="importJsonBtn" style="background: #3498db; box-shadow: 0 4px 0 #2980b9;">📥 匯入舊 JSON</button>
     </div>
 
     <div class="center-message" id="centerMsg">遊戲開始！</div>
@@ -136,15 +100,21 @@
         const scoreAElem = document.getElementById('scoreA');
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
+        const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
         
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 預設熱區
+        // 【已套用】你提供的精準熱區參數
         let virtualHotspots = [
-            { x: 0.22, y: 0.22, r: 0.15 }, { x: 0.50, y: 0.22, r: 0.15 }, { x: 0.78, y: 0.22, r: 0.15 },
-            { x: 0.22, y: 0.48, r: 0.15 }, { x: 0.50, y: 0.50, r: 0.18 }, { x: 0.78, y: 0.48, r: 0.15 },
-            { x: 0.22, y: 0.78, r: 0.15 }, { x: 0.50, y: 0.78, r: 0.15 }
+            { x: 0.187, y: 0.81, r: 0.12 },
+            { x: 0.189, y: 0.5, r: 0.12 },
+            { x: 0.19, y: 0.189, r: 0.12 },
+            { x: 0.498, y: 0.628, r: 0.17 },
+            { x: 0.501, y: 0.19, r: 0.12 },
+            { x: 0.812, y: 0.811, r: 0.12 },
+            { x: 0.809, y: 0.5, r: 0.12 },
+            { x: 0.808, y: 0.192, r: 0.12 }
         ];
 
         async function init() {
@@ -197,6 +167,36 @@
             return null;
         }
 
+        function drawHotspots() {
+            const containerA = document.getElementById('hotspotsA');
+            const containerB = document.getElementById('hotspotsB');
+            containerA.innerHTML = '';
+            containerB.innerHTML = '';
+
+            virtualHotspots.forEach((spot, index) => {
+                const createSpot = () => {
+                    const div = document.createElement('div');
+                    div.className = 'hotspot-visual';
+                    div.style.left = `${spot.x * 100}%`;
+                    div.style.top = `${spot.y * 100}%`;
+                    div.style.width = `${spot.r * 2 * 100}%`; 
+                    div.innerText = index;
+                    return div;
+                };
+                containerA.appendChild(createSpot());
+                containerB.appendChild(createSpot());
+            });
+        }
+
+        let showHotspots = false;
+        toggleHotspotBtn.addEventListener('click', () => {
+            showHotspots = !showHotspots;
+            document.querySelectorAll('.hotspot-visual').forEach(el => {
+                el.style.display = showHotspots ? 'flex' : 'none';
+            });
+            toggleHotspotBtn.innerText = showHotspots ? '👁️ 隱藏熱區' : '👁️ 顯示熱區';
+        });
+
         function nextRound() {
             if (currentCards.length < 2) return;
 
@@ -218,14 +218,14 @@
             roundActive = true;
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
-
-            if (isEditing) {
-                renderEditorDots();
-            }
+            
+            drawHotspots();
+            const displayMode = showHotspots ? 'flex' : 'none';
+            document.querySelectorAll('.hotspot-visual').forEach(el => el.style.display = displayMode);
         }
 
         function handlePlayerClick(event, player) {
-            if (!roundActive || isEditing) return;
+            if (!roundActive) return;
 
             const isPlayerA = (player === 'A');
             const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
@@ -297,193 +297,6 @@
             centerMsg.innerText = text;
             centerMsg.style.display = 'block';
         }
-
-        // ==========================================
-        // 🛠️ 獨立標註工具邏輯
-        // ==========================================
-        let isEditing = false;
-        let selectedIndex = -1; 
-        let draggedDot = null;
-
-        const editorToggleBtn = document.getElementById('editorToggleBtn');
-        const editorPanel = document.getElementById('editorPanel');
-        const editorLayerA = document.getElementById('editorLayerA');
-        const jsonOutput = document.getElementById('jsonOutput');
-        const sliderContainer = document.getElementById('sliderContainer');
-        const selectedIndexDisplay = document.getElementById('selectedIndexDisplay');
-        const radiusDisplay = document.getElementById('radiusDisplay');
-        const radiusSlider = document.getElementById('radiusSlider');
-
-        radiusSlider.addEventListener('input', (e) => {
-            if (selectedIndex === -1) return;
-            const val = parseFloat(e.target.value);
-            virtualHotspots[selectedIndex].r = val;
-            radiusDisplay.innerText = val.toFixed(2);
-            
-            const dot = document.querySelector(`.editor-dot[data-index="${selectedIndex}"]`);
-            if (dot) dot.style.width = `${val * 2 * 100}%`;
-            
-            updateJsonOutput();
-        });
-
-        editorToggleBtn.addEventListener('click', () => {
-            isEditing = !isEditing;
-            editorToggleBtn.classList.toggle('active', isEditing);
-            editorPanel.style.display = isEditing ? 'block' : 'none';
-            
-            if (isEditing) {
-                editorLayerA.style.display = 'block';
-                renderEditorDots();
-                updateJsonOutput();
-            } else {
-                editorLayerA.style.display = 'none';
-                editorLayerA.innerHTML = '';
-                sliderContainer.classList.remove('active');
-                selectedIndex = -1;
-            }
-        });
-
-        function selectDot(index) {
-            selectedIndex = index;
-            document.querySelectorAll('.editor-dot').forEach(d => d.classList.remove('selected'));
-            
-            if (index !== -1) {
-                const dot = document.querySelector(`.editor-dot[data-index="${index}"]`);
-                if (dot) dot.classList.add('selected');
-                
-                const val = virtualHotspots[index].r;
-                radiusSlider.value = val;
-                radiusDisplay.innerText = val.toFixed(2);
-                selectedIndexDisplay.innerText = index;
-                sliderContainer.classList.add('active');
-            } else {
-                sliderContainer.classList.remove('active');
-            }
-        }
-
-        function renderEditorDots() {
-            editorLayerA.innerHTML = '';
-            virtualHotspots.forEach((spot, index) => {
-                const div = document.createElement('div');
-                div.className = 'editor-dot';
-                div.dataset.index = index;
-                div.style.left = `${spot.x * 100}%`;
-                div.style.top = `${spot.y * 100}%`;
-                div.innerText = index;
-                div.style.width = `${spot.r * 2 * 100}%`;
-                
-                if (selectedIndex === index) div.classList.add('selected');
-
-                div.addEventListener('pointerdown', (e) => {
-                    e.stopPropagation();
-                    selectDot(index);
-                    draggedDot = { element: div, index: index };
-                    div.classList.add('dragging');
-                    div.setPointerCapture(e.pointerId);
-                });
-
-                div.addEventListener('pointermove', (e) => {
-                    if (!draggedDot || draggedDot.index !== index) return;
-                    
-                    const container = document.getElementById('cardContainerA');
-                    const rect = container.getBoundingClientRect();
-                    
-                    let displayX = (e.clientX - rect.left) / rect.width;
-                    let displayY = (e.clientY - rect.top) / rect.height;
-                    
-                    displayX = Math.max(0, Math.min(1, displayX));
-                    displayY = Math.max(0, Math.min(1, displayY));
-
-                    let originalX = displayY;
-                    let originalY = 1 - displayX;
-
-                    virtualHotspots[index].x = originalX;
-                    virtualHotspots[index].y = originalY;
-
-                    div.style.left = `${displayX * 100}%`;
-                    div.style.top = `${displayY * 100}%`;
-                    
-                    updateJsonOutput();
-                });
-
-                div.addEventListener('pointerup', (e) => {
-                    if (draggedDot) {
-                        draggedDot.element.classList.remove('dragging');
-                        draggedDot = null;
-                    }
-                });
-
-                editorLayerA.appendChild(div);
-            });
-        }
-
-        document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => {
-            if (!isEditing || draggedDot) return;
-            
-            const rect = e.currentTarget.getBoundingClientRect();
-            let displayX = (e.clientX - rect.left) / rect.width;
-            let displayY = (e.clientY - rect.top) / rect.height;
-
-            let originalX = displayY;
-            let originalY = 1 - displayX;
-
-            if (virtualHotspots.length < 8) {
-                virtualHotspots.push({ x: originalX, y: originalY, r: 0.15 });
-                renderEditorDots();
-                updateJsonOutput();
-            } else {
-                alert("最多只能有 8 個熱區！");
-            }
-        });
-
-        window.addEventListener('keydown', (e) => {
-            if (isEditing && (e.key === 'Delete' || e.key === 'Backspace') && selectedIndex !== -1) {
-                virtualHotspots.splice(selectedIndex, 1);
-                selectedIndex = -1;
-                sliderContainer.classList.remove('active');
-                renderEditorDots();
-                updateJsonOutput();
-            }
-        });
-
-        function updateJsonOutput() {
-            jsonOutput.value = JSON.stringify(virtualHotspots.map(s => ({
-                x: Number(s.x.toFixed(3)),
-                y: Number(s.y.toFixed(3)),
-                r: Number(s.r.toFixed(3))
-            })), null, 2);
-        }
-
-        document.getElementById('clearEditorBtn').addEventListener('click', () => {
-            if(confirm("確定要清空所有點嗎？")) {
-                virtualHotspots = [];
-                selectedIndex = -1;
-                sliderContainer.classList.remove('active');
-                renderEditorDots();
-                updateJsonOutput();
-            }
-        });
-
-        document.getElementById('copyJsonBtn').addEventListener('click', () => {
-            jsonOutput.select();
-            document.execCommand('copy');
-            alert("已複製到剪貼簿！");
-        });
-
-        document.getElementById('importJsonBtn').addEventListener('click', () => {
-            try {
-                const parsed = JSON.parse(jsonOutput.value);
-                if (Array.isArray(parsed)) {
-                    virtualHotspots = parsed.map(p => ({ x: p.x, y: p.y, r: p.r || 0.15 }));
-                    selectedIndex = -1;
-                    sliderContainer.classList.remove('active');
-                    renderEditorDots();
-                    alert("匯入成功！");
-                }
-            } catch (e) {
-                alert("JSON 格式錯誤！");
-            }
-        });
 
         document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'A'));
         document.getElementById('cardContainerB').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'B'));
