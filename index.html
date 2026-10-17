@@ -1,31 +1,38 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble 雙人對戰</title>
+    <title>Dobble - 2 Player Battle</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 頂部控制列 */
-        .top-bar { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; gap: 15px; align-items: center; background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.2); }
-        .top-bar label { color: #fff; font-weight: bold; font-size: 0.9rem; }
-        #themeSelect { padding: 8px 15px; border-radius: 20px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; }
-        .btn { background: #e09d32; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 #7b4a1a; transition: 0.1s; font-family: inherit; }
+        /* 右上角齒輪按鈕 */
+        .settings-btn { position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
+
+        /* 設置選單面板 */
+        .settings-panel { position: absolute; top: 75px; right: 20px; z-index: 40; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 20px; display: none; flex-direction: column; gap: 15px; width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .settings-panel.active { display: flex; }
+        
+        .settings-panel label { color: #fff; font-weight: bold; font-size: 0.9rem; }
+        #themeSelect { padding: 10px; border-radius: 8px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; width: 100%; }
+        
+        .btn { background: #e09d32; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 #7b4a1a; transition: 0.1s; font-family: inherit; width: 100%; font-size: 1rem; text-align: center; }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7b4a1a; }
 
         /* 遊戲主容器 */
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
         
-        /* 計分板 */
-        .score-board { position: absolute; top: -10px; font-size: 1.5rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 8px 24px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
+        /* 計分板 (往上移，不擋卡片) */
+        .score-board { position: absolute; top: -35px; font-size: 1.2rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
-        /* 【核心結構】卡片容器 */
-        .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; background: #fff; cursor: pointer; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); }
+        /* 卡片容器 */
+        .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; background: #fff; cursor: pointer; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); margin-top: 30px; }
         
-        /* 內層旋轉群組 (圖片與熱區都在裡面) */
+        /* 內層旋轉群組 */
         .card-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center; }
         
         /* 旋轉設定 */
@@ -35,7 +42,7 @@
         /* 圖片與熱區 */
         .card-rotator img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 熱區顯示圈 (跟著旋轉群組走) */
+        /* 熱區顯示圈 */
         .hotspot-visual { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             background: rgba(255, 0, 0, 0.3); border: 2px solid red; 
@@ -44,55 +51,57 @@
             color: white; font-weight: bold; font-size: 1.2rem; 
         }
 
-        /* 點擊回饋特效 (獨立於旋轉群組外，直接顯示在玩家點擊位置) */
+        /* 點擊回饋特效 */
         .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -50%); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
-        /* 中央訊息 */
+        /* 中央訊息 (改為英文) */
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <label>主題：</label>
-        <select id="themeSelect"></select>
-        <button class="btn" id="toggleHotspotBtn">👁️ 顯示熱區</button>
-        <button class="btn" id="resetBtn">🔄 重新開始</button>
+    <!-- 齒輪設置按鈕 -->
+    <div class="settings-btn" id="settingsBtn">⚙️</div>
+
+    <!-- 設置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div>
+            <label>Theme:</label>
+            <select id="themeSelect"></select>
+        </div>
+        <button class="btn" id="toggleHotspotBtn">👁️ Show Hotspots</button>
+        <button class="btn" id="resetBtn">🔄 Restart Game</button>
     </div>
 
     <div class="game-board">
-        <!-- 玩家 A (左側) -->
+        <!-- Player A (Left) -->
         <div class="player-area left" id="playerA">
-            <div class="score-board">玩家 A: <span id="scoreA">0</span></div>
+            <div class="score-board">Player A: <span id="scoreA">0</span></div>
             <div class="card-container" id="cardContainerA">
-                <!-- 旋轉群組 -->
                 <div class="card-rotator" id="rotatorA">
                     <img id="imgA" src="" alt="Card A">
                     <div id="hotspotsA"></div>
                 </div>
-                <!-- 特效獨立放外面 -->
                 <div class="hit-effect" id="hitEffectA"></div>
             </div>
         </div>
 
-        <!-- 玩家 B (右側) -->
+        <!-- Player B (Right) -->
         <div class="player-area right" id="playerB">
-            <div class="score-board">玩家 B: <span id="scoreB">0</span></div>
+            <div class="score-board">Player B: <span id="scoreB">0</span></div>
             <div class="card-container" id="cardContainerB">
-                <!-- 旋轉群組 -->
                 <div class="card-rotator" id="rotatorB">
                     <img id="imgB" src="" alt="Card B">
                     <div id="hotspotsB"></div>
                 </div>
-                <!-- 特效獨立放外面 -->
                 <div class="hit-effect" id="hitEffectB"></div>
             </div>
         </div>
     </div>
 
-    <div class="center-message" id="centerMsg">遊戲開始！</div>
+    <div class="center-message" id="centerMsg">Game Start!</div>
 
     <script>
         let currentThemeId = null;
@@ -115,6 +124,9 @@
         const centerMsg = document.getElementById('centerMsg');
         const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
         
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
@@ -130,6 +142,18 @@
             { x: 0.808, y: 0.192, r: 0.12 }
         ];
 
+        // 齒輪選單開關
+        settingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.toggle('active');
+        });
+
+        // 點擊其他地方關閉選單
+        document.addEventListener('pointerdown', (e) => {
+            if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+                settingsPanel.classList.remove('active');
+            }
+        });
+
         async function init() {
             try {
                 const res = await fetch('sets/index.json');
@@ -144,7 +168,7 @@
                 themeSelect.addEventListener('change', () => loadTheme(themeSelect.value));
                 await loadTheme(themeSelect.value);
             } catch (e) {
-                console.error("載入 index.json 失敗", e);
+                console.error("Failed to load index.json", e);
             }
         }
 
@@ -158,7 +182,7 @@
                 currentCards = data.cardsData.map(indices => indices.map(idx => wordBank[idx]));
                 resetGame();
             } catch (e) {
-                console.error(`載入 ${themeId} 失敗`, e);
+                console.error(`Failed to load theme ${themeId}`, e);
             }
         }
 
@@ -208,7 +232,7 @@
             document.querySelectorAll('.hotspot-visual').forEach(el => {
                 el.style.display = showHotspots ? 'flex' : 'none';
             });
-            toggleHotspotBtn.innerText = showHotspots ? '👁️ 隱藏熱區' : '👁️ 顯示熱區';
+            toggleHotspotBtn.innerText = showHotspots ? '👁️ Hide Hotspots' : '👁️ Show Hotspots';
         });
 
         function nextRound() {
@@ -246,17 +270,14 @@
             
             const rect = container.getBoundingClientRect();
             
-            // 玩家點擊在「正方形外框」上的比例 (用於顯示回饋圈)
             let displayX = (event.clientX - rect.left) / rect.width;
             let displayY = (event.clientY - rect.top) / rect.height;
 
-            // 特效圈直接顯示在點擊處
             effect.style.left = `${displayX * 100}%`;
             effect.style.top = `${displayY * 100}%`;
 
             let clickX, clickY;
 
-            // 計算反轉回原始圖片的座標
             if (isPlayerA) {
                 clickX = displayY;
                 clickY = 1 - displayX;
@@ -290,10 +311,10 @@
                 
                 if (isPlayerA) {
                     scoreA++; scoreAElem.innerText = scoreA;
-                    showCenterMessage("🎉 玩家 A 得分！");
+                    showCenterMessage("🎉 Player A Scores!");
                 } else {
                     scoreB++; scoreBElem.innerText = scoreB;
-                    showCenterMessage("🎉 玩家 B 得分！");
+                    showCenterMessage("🎉 Player B Scores!");
                 }
 
                 setTimeout(() => {
