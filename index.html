@@ -31,23 +31,14 @@
         .player-area.right .card-container img { transform: rotate(-90deg) scale(1); }
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 【修正】強制所有圓圈 aspect-ratio: 1/1 */
+        /* 點擊回饋特效 */
         .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
         .player-area.left .hit-effect { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 熱區顯示圈 (除錯用) */
-        .hotspot-visual {
-            position: absolute; aspect-ratio: 1/1; border-radius: 50%;
-            background: rgba(255, 0, 0, 0.2); border: 2px solid red;
-            transform: translate(-50%, -50%); pointer-events: none;
-            display: none; z-index: 4;
-        }
-        .player-area.left .hotspot-visual { transform: translate(-50%, -50%) rotate(90deg); }
-        .player-area.right .hotspot-visual { transform: translate(-50%, -50%) rotate(-90deg); }
-
+        /* 中央訊息 */
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
 
         /* --- 標註模式專用 UI --- */
@@ -64,7 +55,7 @@
         .editor-panel textarea { width: 100%; height: 100px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
         .editor-panel .btn { display: block; width: 100%; margin-bottom: 8px; padding: 10px; font-size: 0.9rem; }
         
-        /* 【修正】強制標註圓圈 aspect-ratio: 1/1 */
+        /* 標註模式下的可拖曳圓圈 */
         .editor-dot { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             background: rgba(0, 150, 255, 0.3); border: 2px solid #00aaff; 
@@ -91,7 +82,6 @@
             <div class="card-container" id="cardContainerA">
                 <img id="imgA" src="" alt="Card A">
                 <div class="hit-effect" id="hitEffectA"></div>
-                <div id="hotspotsA"></div>
                 <div id="editorLayerA"></div>
             </div>
         </div>
@@ -101,7 +91,6 @@
             <div class="card-container" id="cardContainerB">
                 <img id="imgB" src="" alt="Card B">
                 <div class="hit-effect" id="hitEffectB"></div>
-                <div id="hotspotsB"></div>
             </div>
         </div>
     </div>
@@ -151,6 +140,7 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
+        // 預設熱區
         let virtualHotspots = [
             { x: 0.22, y: 0.22, r: 0.15 }, { x: 0.50, y: 0.22, r: 0.15 }, { x: 0.78, y: 0.22, r: 0.15 },
             { x: 0.22, y: 0.48, r: 0.15 }, { x: 0.50, y: 0.50, r: 0.18 }, { x: 0.78, y: 0.48, r: 0.15 },
@@ -207,46 +197,6 @@
             return null;
         }
 
-        function drawHotspots() {
-            const containerA = document.getElementById('hotspotsA');
-            const containerB = document.getElementById('hotspotsB');
-            containerA.innerHTML = '';
-            containerB.innerHTML = '';
-
-            virtualHotspots.forEach((spot, index) => {
-                const createSpot = () => {
-                    const div = document.createElement('div');
-                    div.className = 'hotspot-visual';
-                    div.style.left = `${spot.x * 100}%`;
-                    div.style.top = `${spot.y * 100}%`;
-                    div.style.width = `${spot.r * 2 * 100}%`; 
-                    div.innerText = index;
-                    div.style.display = 'flex';
-                    div.style.alignItems = 'center';
-                    div.style.justifyContent = 'center';
-                    div.style.color = 'white';
-                    div.style.fontWeight = 'bold';
-                    return div;
-                };
-                containerA.appendChild(createSpot());
-                containerB.appendChild(createSpot());
-            });
-        }
-
-        let showHotspots = false;
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'btn';
-        toggleBtn.innerText = '👁️ 顯示熱區';
-        toggleBtn.style.marginLeft = '10px';
-        document.querySelector('.top-bar').appendChild(toggleBtn);
-        toggleBtn.addEventListener('click', () => {
-            showHotspots = !showHotspots;
-            document.querySelectorAll('.hotspot-visual').forEach(el => {
-                el.style.display = showHotspots ? 'flex' : 'none';
-            });
-            toggleBtn.innerText = showHotspots ? '👁️ 隱藏熱區' : '👁️ 顯示熱區';
-        });
-
         function nextRound() {
             if (currentCards.length < 2) return;
 
@@ -268,10 +218,6 @@
             roundActive = true;
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
-            
-            drawHotspots();
-            const displayMode = showHotspots ? 'flex' : 'none';
-            document.querySelectorAll('.hotspot-visual').forEach(el => el.style.display = displayMode);
 
             if (isEditing) {
                 renderEditorDots();
@@ -394,7 +340,6 @@
                 editorLayerA.innerHTML = '';
                 sliderContainer.classList.remove('active');
                 selectedIndex = -1;
-                drawHotspots();
             }
         });
 
