@@ -24,17 +24,8 @@
         /* 計分板 */
         .score-board { position: absolute; top: 0; font-size: 1.8rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 8px 24px; border-radius: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
-        /* 【核心改動】卡片容器變為直立式 */
-        .card-container { position: relative; width: 80%; max-width: 400px; aspect-ratio: 1/1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); background: #fff; cursor: pointer; }
-        
-        /* 
-           【視角關鍵】 
-           左側的 A 玩家：圖片順時針旋轉 90 度，讓圖片頭朝左。
-           右側的 B 玩家：圖片逆時針旋轉 90 度，讓圖片頭朝右。
-        */
-        .player-area.left .card-container img { transform: rotate(90deg) scale(0.7); }
-        .player-area.right .card-container img { transform: rotate(-90deg) scale(0.7); }
-
+        /* 卡片容器：維持正方形，不旋轉圖片 */
+        .card-container { position: relative; width: 85%; max-width: 500px; aspect-ratio: 1/1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); background: #fff; cursor: pointer; }
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
         /* 點擊回饋特效 */
@@ -44,17 +35,9 @@
         
         /* 中央訊息 */
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
-
-        /* 左側邊緣的文字 A */
-        .side-label-a { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 3rem; color: #4a90e2; font-weight: bold; }
-        /* 右側邊緣的文字 B */
-        .side-label-b { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 3rem; color: #4a90e2; font-weight: bold; }
     </style>
 </head>
 <body>
-
-    <div class="side-label-a">A</div>
-    <div class="side-label-b">B</div>
 
     <div class="top-bar">
         <label>主題：</label>
@@ -68,8 +51,7 @@
             <div class="score-board">玩家 A: <span id="scoreA">0</span></div>
             <div class="card-container" id="cardContainerA">
                 <img id="imgA" src="" alt="Card A">
-                <!-- 特效容器也要跟著旋轉，這樣圓圈才會順著玩家的視角 -->
-                <div class="hit-effect" id="hitEffectA" style="transform-origin: center; transform: rotate(90deg) translate(-50%, -50%);"></div>
+                <div class="hit-effect" id="hitEffectA"></div>
             </div>
         </div>
 
@@ -78,8 +60,7 @@
             <div class="score-board">玩家 B: <span id="scoreB">0</span></div>
             <div class="card-container" id="cardContainerB">
                 <img id="imgB" src="" alt="Card B">
-                <!-- 特效容器也要跟著旋轉 -->
-                <div class="hit-effect" id="hitEffectB" style="transform-origin: center; transform: rotate(-90deg) translate(-50%, -50%);"></div>
+                <div class="hit-effect" id="hitEffectB"></div>
             </div>
         </div>
     </div>
@@ -87,9 +68,6 @@
     <div class="center-message" id="centerMsg">遊戲開始！</div>
 
     <script>
-        // ==========================================
-        // 全局狀態
-        // ==========================================
         let currentThemeId = null;
         let wordBank = [];
         let currentCards = [];
@@ -112,7 +90,6 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 虛擬 8 點熱區 (3x3 網格)
         const virtualHotspots = [
             { x: 0.20, y: 0.20 }, { x: 0.50, y: 0.20 }, { x: 0.80, y: 0.20 },
             { x: 0.20, y: 0.50 }, { x: 0.50, y: 0.50 }, { x: 0.80, y: 0.50 },
@@ -178,7 +155,7 @@
         function nextRound() {
             if (currentCards.length < 2) return;
 
-            // 【白卡修復】限制抽卡範圍在 1~8 張，並確保有共同單字
+            // 限制 1~8 張防白卡，並確保有共同單字
             const testLimit = Math.min(8, currentCards.length);
             let idxA, idxB;
             do {
@@ -197,7 +174,6 @@
             roundActive = true;
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
-            console.log(`新回合！共同圖案是：${commonWord}`);
         }
 
         function handlePlayerClick(event, player) {
@@ -210,26 +186,26 @@
             
             const rect = container.getBoundingClientRect();
             
-            // 計算點擊點在圖片內的相對比例 (0~1)
-            let clickX = (event.clientX - rect.left) / rect.width;
-            let clickY = (event.clientY - rect.top) / rect.height;
+            // 1. 取得玩家在螢幕上點擊的相對比例
+            let displayX = (event.clientX - rect.left) / rect.width;
+            let displayY = (event.clientY - rect.top) / rect.height;
 
-            // 【座標反轉邏輯】
+            let clickX, clickY;
+
+            // 2. 【核心矩陣變換】根據玩家在左或在右，換算成圖片的真實座標
             if (isPlayerA) {
-                // A 玩家圖片順時針轉了 90 度
-                // 玩家點擊的 (x, y) 需要轉換回原本圖片的 (x', y')
-                let temp = clickX;
-                clickX = clickY;
-                clickY = 1 - temp;
+                // A 玩家在左邊，他的上方是圖片的左方。
+                // 把點擊點順時針旋轉 90 度回推
+                clickX = displayY;
+                clickY = 1 - displayX;
             } else {
-                // B 玩家圖片逆時針轉了 90 度
-                // 玩家點擊的 (x, y) 需要轉換回原本圖片的 (x', y')
-                let temp = clickX;
-                clickX = 1 - clickY;
-                clickY = temp;
+                // B 玩家在右邊，他的上方是圖片的右方。
+                // 把點擊點逆時針旋轉 90 度回推
+                clickX = 1 - displayY;
+                clickY = displayX;
             }
 
-            // 尋找最近的虛擬熱區
+            // 3. 尋找最近的虛擬熱區 (使用換算後的真實座標)
             let hitIndex = -1;
             let minDistance = Infinity;
             virtualHotspots.forEach((spot, index) => {
@@ -246,9 +222,9 @@
 
             const hitWord = cardData[hitIndex];
 
-            // 顯示特效 (由於特效容器跟著圖片旋轉了，這裡直接顯示在點擊的相對位置)
-            effect.style.left = `${virtualHotspots[hitIndex].x * 100}%`;
-            effect.style.top = `${virtualHotspots[hitIndex].y * 100}%`;
+            // 4. 顯示特效：直接顯示在「玩家點擊的螢幕位置」(displayX, displayY)
+            effect.style.left = `${displayX * 100}%`;
+            effect.style.top = `${displayY * 100}%`;
 
             if (hitWord === commonWord) {
                 effect.className = 'hit-effect correct';
