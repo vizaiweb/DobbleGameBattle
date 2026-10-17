@@ -25,26 +25,27 @@
         /* 卡片容器 */
         .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); background: #fff; cursor: pointer; }
         
-        /* 【核心視覺】讓圖片旋轉 90度 與 -90度 */
+        /* 圖片旋轉 */
         .player-area.left .card-container img { transform: rotate(90deg) scale(0.9); }
         .player-area.right .card-container img { transform: rotate(-90deg) scale(0.9); }
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 【核心特效】點擊回饋圈也要跟著旋轉 */
+        /* 點擊回饋特效 */
         .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
         .player-area.left .hit-effect { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 【新加入】顯示熱區的紅色圓圈 */
+        /* 【已修復】顯示熱區的紅色圓圈 */
         .hotspot-visual { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
-            background: rgba(255, 0, 0, 0.2); border: 2px solid red; 
+            background: rgba(255, 0, 0, 0.3); border: 2px solid red; 
             transform: translate(-50%, -50%); pointer-events: none; 
             display: none; z-index: 4; align-items: center; justify-content: center; 
             color: white; font-weight: bold; font-size: 1.2rem; 
         }
+        /* 👇 這就是之前漏掉的地方！讓熱區跟著轉 */
         .player-area.left .hotspot-visual { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hotspot-visual { transform: translate(-50%, -50%) rotate(-90deg); }
 
@@ -67,7 +68,7 @@
             <div class="card-container" id="cardContainerA">
                 <img id="imgA" src="" alt="Card A">
                 <div class="hit-effect" id="hitEffectA"></div>
-                <div id="hotspotsA"></div> <!-- 放置熱區的容器 -->
+                <div id="hotspotsA"></div>
             </div>
         </div>
 
@@ -76,7 +77,7 @@
             <div class="card-container" id="cardContainerB">
                 <img id="imgB" src="" alt="Card B">
                 <div class="hit-effect" id="hitEffectB"></div>
-                <div id="hotspotsB"></div> <!-- 放置熱區的容器 -->
+                <div id="hotspotsB"></div>
             </div>
         </div>
     </div>
@@ -84,9 +85,6 @@
     <div class="center-message" id="centerMsg">遊戲開始！</div>
 
     <script>
-        // ==========================================
-        // 全局狀態
-        // ==========================================
         let currentThemeId = null;
         let wordBank = [];
         let currentCards = [];
@@ -110,7 +108,6 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 你提供的精準座標
         const virtualHotspots = [
             { x: 0.187, y: 0.81, r: 0.12 },
             { x: 0.189, y: 0.5, r: 0.12 },
@@ -172,7 +169,6 @@
             return null;
         }
 
-        // 繪製熱區圈圈
         function drawHotspots() {
             const containerA = document.getElementById('hotspotsA');
             const containerB = document.getElementById('hotspotsB');
@@ -187,7 +183,6 @@
                     div.style.top = `${spot.y * 100}%`;
                     div.style.width = `${spot.r * 2 * 100}%`; 
                     div.innerText = index;
-                    // 預設跟隨目前的顯示狀態
                     div.style.display = showHotspots ? 'flex' : 'none';
                     return div;
                 };
@@ -196,7 +191,6 @@
             });
         }
 
-        // 熱區顯示開關
         let showHotspots = false;
         toggleHotspotBtn.addEventListener('click', () => {
             showHotspots = !showHotspots;
@@ -228,7 +222,6 @@
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
             
-            // 換卡時重新繪製熱區
             drawHotspots();
         }
 
@@ -242,13 +235,12 @@
             
             const rect = container.getBoundingClientRect();
             
-            // 取得玩家在螢幕上的點擊比例
             let displayX = (event.clientX - rect.left) / rect.width;
             let displayY = (event.clientY - rect.top) / rect.height;
 
             let clickX, clickY;
 
-            // 【核心矩陣】將螢幕座標反轉回圖片真實座標
+            // 座標矩陣反轉
             if (isPlayerA) {
                 clickX = displayY;
                 clickY = 1 - displayX;
@@ -274,7 +266,6 @@
 
             const hitWord = cardData[hitIndex];
 
-            // 顯示特效在玩家點擊的螢幕位置
             effect.style.left = `${displayX * 100}%`;
             effect.style.top = `${displayY * 100}%`;
             effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; 
