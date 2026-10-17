@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble 雙人對戰與熱區標註</title>
+    <title>Dobble 雙人對戰與獨立熱區標註</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
@@ -32,15 +32,15 @@
         .card-container img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
         /* 點擊回饋特效 */
-        .hit-effect { position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
+        .hit-effect { position: absolute; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; }
         .player-area.left .hit-effect { transform: translate(-50%, -50%) rotate(90deg); }
         .player-area.right .hit-effect { transform: translate(-50%, -50%) rotate(-90deg); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
         
-        /* 熱區顯示圈 */
+        /* 熱區顯示圈 (除錯用) */
         .hotspot-visual {
-            position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%;
+            position: absolute; border-radius: 50%;
             background: rgba(255, 0, 0, 0.2); border: 2px solid red;
             transform: translate(-50%, -50%); pointer-events: none;
             display: none; z-index: 4;
@@ -55,17 +55,20 @@
         .editor-panel h3 { margin: 0 0 10px 0; color: #e09d32; font-size: 1.1rem; }
         .editor-panel p { font-size: 0.85rem; color: #ccc; margin-bottom: 10px; line-height: 1.4; }
         
-        /* 滑桿樣式 */
-        .slider-container { margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; }
+        /* 獨立滑桿容器 */
+        .slider-container { margin-bottom: 15px; background: #222; padding: 10px; border-radius: 8px; display: none; }
+        .slider-container.active { display: block; }
         .slider-container label { display: flex; justify-content: space-between; font-weight: bold; color: #00aaff; margin-bottom: 5px; font-size: 0.9rem;}
         input[type=range] { width: 100%; cursor: pointer; }
 
-        .editor-panel textarea { width: 100%; height: 120px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
+        .editor-panel textarea { width: 100%; height: 100px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; border: 1px solid #555; padding: 8px; border-radius: 5px; margin-bottom: 10px; }
         .editor-panel .btn { display: block; width: 100%; margin-bottom: 8px; padding: 10px; font-size: 0.9rem; }
         
         /* 標註模式下的可拖曳圓圈 */
-        .editor-dot { position: absolute; width: 24%; aspect-ratio: 1/1; border-radius: 50%; background: rgba(0, 150, 255, 0.3); border: 2px solid #00aaff; transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem; z-index: 15; }
+        .editor-dot { position: absolute; border-radius: 50%; background: rgba(0, 150, 255, 0.3); border: 2px solid #00aaff; transform: translate(-50%, -50%); cursor: grab; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; z-index: 15; }
         .editor-dot.dragging { cursor: grabbing; background: rgba(0, 255, 0, 0.3); border-color: #00ff00; }
+        /* 選中時的樣式 */
+        .editor-dot.selected { border-color: #ffeb3b; background: rgba(255, 235, 59, 0.4); box-shadow: 0 0 15px #ffeb3b; z-index: 16; }
     </style>
 </head>
 <body>
@@ -101,18 +104,18 @@
     <!-- 標註工具面板 -->
     <div class="editor-panel" id="editorPanel">
         <h3>🛠️ 熱區標註工具</h3>
-        <p>1. 在「玩家 A」圖片點擊新增。<br>2. 拖曳藍圈移動位置。</p>
+        <p>1. 在圖片點擊新增。<br>2. 點選圓圈後，可拖曳或拉滑桿。<br>3. 按鍵盤 Delete 可刪除選中的圓圈。</p>
         
-        <!-- 新增的滑桿 -->
-        <div class="slider-container">
-            <label>圓圈半徑大小 <span id="radiusDisplay">0.15</span></label>
+        <!-- 獨立滑桿 -->
+        <div class="slider-container" id="sliderContainer">
+            <label>選中圓圈 (編號 <span id="selectedIndexDisplay">-</span>) 半徑：<span id="radiusDisplay">0.15</span></label>
             <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.15">
         </div>
 
         <button class="btn" id="clearEditorBtn" style="background: #e74c3c; box-shadow: 0 4px 0 #c0392b;">🗑️ 清除所有圓圈</button>
-        <textarea id="jsonOutput" readonly placeholder="產生的 JSON 會顯示在這裡..."></textarea>
+        <textarea id="jsonOutput" readonly placeholder="產生的 JSON..."></textarea>
         <button class="btn" id="copyJsonBtn">📋 複製 JSON</button>
-        <button class="btn" id="importJsonBtn" style="background: #3498db; box-shadow: 0 4px 0 #2980b9;">📥 匯入舊 JSON (貼在上方後點擊)</button>
+        <button class="btn" id="importJsonBtn" style="background: #3498db; box-shadow: 0 4px 0 #2980b9;">📥 匯入舊 JSON</button>
     </div>
 
     <div class="center-message" id="centerMsg">遊戲開始！</div>
@@ -143,13 +146,12 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 預設熱區
+        // 【核心改動】每個熱區現在都包含自己的 r (半徑)
         let virtualHotspots = [
-            { x: 0.22, y: 0.22 }, { x: 0.50, y: 0.22 }, { x: 0.78, y: 0.22 },
-            { x: 0.22, y: 0.48 }, { x: 0.50, y: 0.50 }, { x: 0.78, y: 0.48 },
-            { x: 0.22, y: 0.78 }, { x: 0.50, y: 0.78 }
+            { x: 0.22, y: 0.22, r: 0.15 }, { x: 0.50, y: 0.22, r: 0.15 }, { x: 0.78, y: 0.22, r: 0.15 },
+            { x: 0.22, y: 0.48, r: 0.15 }, { x: 0.50, y: 0.50, r: 0.18 }, { x: 0.78, y: 0.48, r: 0.15 },
+            { x: 0.22, y: 0.78, r: 0.15 }, { x: 0.50, y: 0.78, r: 0.15 }
         ];
-        let HOTSPOT_RADIUS = 0.15;
 
         // ==========================================
         // 初始化與載入資料
@@ -169,8 +171,6 @@
                 await loadTheme(themeSelect.value);
             } catch (e) {
                 console.error("載入 index.json 失敗", e);
-                centerMsg.textContent = "載入主題失敗，請檢查 sets/index.json";
-                centerMsg.style.display = 'block';
             }
         }
 
@@ -184,7 +184,7 @@
                 currentCards = data.cardsData.map(indices => indices.map(idx => wordBank[idx]));
                 resetGame();
             } catch (e) {
-                console.error(`載入 ${themeId}.json 失敗`, e);
+                console.error(`載入 ${themeId} 失敗`, e);
             }
         }
 
@@ -221,14 +221,13 @@
                     div.className = 'hotspot-visual';
                     div.style.left = `${spot.x * 100}%`;
                     div.style.top = `${spot.y * 100}%`;
-                    div.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`; // 套用半徑
+                    div.style.width = `${spot.r * 2 * 100}%`; // 套用獨立半徑
                     div.innerText = index;
                     div.style.display = 'flex';
                     div.style.alignItems = 'center';
                     div.style.justifyContent = 'center';
                     div.style.color = 'white';
                     div.style.fontWeight = 'bold';
-                    div.style.fontSize = '1.5rem';
                     return div;
                 };
                 containerA.appendChild(createSpot());
@@ -311,7 +310,8 @@
                 const dx = clickX - spot.x;
                 const dy = clickY - spot.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist <= HOTSPOT_RADIUS && dist < minDistance) {
+                // 使用每個點自己的 r
+                if (dist <= spot.r && dist < minDistance) {
                     minDistance = dist;
                     hitIndex = index;
                 }
@@ -323,7 +323,7 @@
 
             effect.style.left = `${displayX * 100}%`;
             effect.style.top = `${displayY * 100}%`;
-            effect.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`; // 特效套用半徑
+            effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; // 套用該點的半徑
 
             if (hitWord === commonWord) {
                 effect.className = 'hit-effect correct';
@@ -356,26 +356,32 @@
         }
 
         // ==========================================
-        // 🛠️ 標註工具邏輯
+        // 🛠️ 獨立標註工具邏輯
         // ==========================================
         let isEditing = false;
+        let selectedIndex = -1; // 目前選中的圓圈
+        let draggedDot = null;
+
         const editorToggleBtn = document.getElementById('editorToggleBtn');
         const editorPanel = document.getElementById('editorPanel');
         const editorLayerA = document.getElementById('editorLayerA');
         const jsonOutput = document.getElementById('jsonOutput');
+        const sliderContainer = document.getElementById('sliderContainer');
+        const selectedIndexDisplay = document.getElementById('selectedIndexDisplay');
         const radiusDisplay = document.getElementById('radiusDisplay');
         const radiusSlider = document.getElementById('radiusSlider');
-        let draggedDot = null;
 
-        // 滑桿事件
+        // 滑桿事件 (只改選中的那個)
         radiusSlider.addEventListener('input', (e) => {
-            HOTSPOT_RADIUS = parseFloat(e.target.value);
-            radiusDisplay.innerText = HOTSPOT_RADIUS.toFixed(2);
+            if (selectedIndex === -1) return;
+            const val = parseFloat(e.target.value);
+            virtualHotspots[selectedIndex].r = val;
+            radiusDisplay.innerText = val.toFixed(2);
             
-            // 即時更新所有藍圈的大小
-            document.querySelectorAll('.editor-dot').forEach(dot => {
-                dot.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
-            });
+            const dot = document.querySelector(`.editor-dot[data-index="${selectedIndex}"]`);
+            if (dot) dot.style.width = `${val * 2 * 100}%`;
+            
+            updateJsonOutput();
         });
 
         editorToggleBtn.addEventListener('click', () => {
@@ -390,27 +396,55 @@
             } else {
                 editorLayerA.style.display = 'none';
                 editorLayerA.innerHTML = '';
-                drawHotspots(); // 還原遊戲紅圈
+                sliderContainer.classList.remove('active');
+                selectedIndex = -1;
+                drawHotspots();
             }
         });
+
+        function selectDot(index) {
+            selectedIndex = index;
+            // 移除所有選中樣式
+            document.querySelectorAll('.editor-dot').forEach(d => d.classList.remove('selected'));
+            
+            if (index !== -1) {
+                const dot = document.querySelector(`.editor-dot[data-index="${index}"]`);
+                if (dot) dot.classList.add('selected');
+                
+                // 更新滑桿數值
+                const val = virtualHotspots[index].r;
+                radiusSlider.value = val;
+                radiusDisplay.innerText = val.toFixed(2);
+                selectedIndexDisplay.innerText = index;
+                sliderContainer.classList.add('active');
+            } else {
+                sliderContainer.classList.remove('active');
+            }
+        }
 
         function renderEditorDots() {
             editorLayerA.innerHTML = '';
             virtualHotspots.forEach((spot, index) => {
                 const div = document.createElement('div');
                 div.className = 'editor-dot';
+                div.dataset.index = index;
                 div.style.left = `${spot.x * 100}%`;
                 div.style.top = `${spot.y * 100}%`;
                 div.innerText = index;
-                div.style.width = `${HOTSPOT_RADIUS * 2 * 100}%`;
+                div.style.width = `${spot.r * 2 * 100}%`;
                 
+                if (selectedIndex === index) div.classList.add('selected');
+
+                // 點擊選中
                 div.addEventListener('pointerdown', (e) => {
                     e.stopPropagation();
+                    selectDot(index);
                     draggedDot = { element: div, index: index };
                     div.classList.add('dragging');
                     div.setPointerCapture(e.pointerId);
                 });
 
+                // 拖曳移動
                 div.addEventListener('pointermove', (e) => {
                     if (!draggedDot || draggedDot.index !== index) return;
                     
@@ -446,7 +480,7 @@
             });
         }
 
-        // 點擊空白處新增圓圈
+        // 點擊空白處新增
         document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => {
             if (!isEditing || draggedDot) return;
             
@@ -458,7 +492,7 @@
             let originalY = 1 - displayX;
 
             if (virtualHotspots.length < 8) {
-                virtualHotspots.push({ x: originalX, y: originalY });
+                virtualHotspots.push({ x: originalX, y: originalY, r: 0.15 });
                 renderEditorDots();
                 updateJsonOutput();
             } else {
@@ -466,16 +500,30 @@
             }
         });
 
+        // 鍵盤刪除
+        window.addEventListener('keydown', (e) => {
+            if (isEditing && (e.key === 'Delete' || e.key === 'Backspace') && selectedIndex !== -1) {
+                virtualHotspots.splice(selectedIndex, 1);
+                selectedIndex = -1;
+                sliderContainer.classList.remove('active');
+                renderEditorDots();
+                updateJsonOutput();
+            }
+        });
+
         function updateJsonOutput() {
             jsonOutput.value = JSON.stringify(virtualHotspots.map(s => ({
                 x: Number(s.x.toFixed(3)),
-                y: Number(s.y.toFixed(3))
+                y: Number(s.y.toFixed(3)),
+                r: Number(s.r.toFixed(3))
             })), null, 2);
         }
 
         document.getElementById('clearEditorBtn').addEventListener('click', () => {
             if(confirm("確定要清空所有點嗎？")) {
                 virtualHotspots = [];
+                selectedIndex = -1;
+                sliderContainer.classList.remove('active');
                 renderEditorDots();
                 updateJsonOutput();
             }
@@ -491,7 +539,10 @@
             try {
                 const parsed = JSON.parse(jsonOutput.value);
                 if (Array.isArray(parsed)) {
-                    virtualHotspots = parsed;
+                    // 確保匯入的資料有 r 屬性
+                    virtualHotspots = parsed.map(p => ({ x: p.x, y: p.y, r: p.r || 0.15 }));
+                    selectedIndex = -1;
+                    sliderContainer.classList.remove('active');
                     renderEditorDots();
                     alert("匯入成功！");
                 }
