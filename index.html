@@ -8,50 +8,50 @@
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
+        /* 齒輪與設置 */
         .settings-btn { position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
         .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
-
         .settings-panel { position: absolute; top: 75px; right: 20px; z-index: 40; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 20px; display: none; flex-direction: column; gap: 15px; width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .settings-panel.active { display: flex; }
-        
         .settings-panel label { color: #fff; font-weight: bold; font-size: 0.9rem; }
         #themeSelect { padding: 10px; border-radius: 8px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; width: 100%; }
         
         .btn { background: #e09d32; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 #7b4a1a; transition: 0.1s; font-family: inherit; width: 100%; font-size: 1rem; text-align: center; }
         .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7b4a1a; }
 
+        /* 遊戲主容器 */
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
         
+        /* 計分板 */
         .score-board { position: absolute; top: -35px; font-size: 1.2rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
+        /* 卡片容器 */
         .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; background: #fff; cursor: pointer; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); margin-top: 30px; }
         .card-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center; }
-        
         .player-area.left .card-rotator { transform: rotate(90deg); }
         .player-area.right .card-rotator { transform: rotate(-90deg); }
-        
         .card-rotator img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
+        /* 熱區顯示圈與點擊特效 */
         .hotspot-visual { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
-            background: rgba(255, 0, 0, 0.3); border: 2px solid red; 
+            background: rgba(255, 0, 0, 0.2); border: 2px solid red; 
             transform: translate(-50%, -50%); pointer-events: none; 
             display: none; z-index: 4; align-items: center; justify-content: center; 
             color: white; font-weight: bold; font-size: 1.2rem; 
         }
-
         .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -50%); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
+        /* 中央訊息 */
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
     </style>
 </head>
 <body>
 
     <div class="settings-btn" id="settingsBtn">⚙️</div>
-
     <div class="settings-panel" id="settingsPanel">
         <div>
             <label>Theme:</label>
@@ -114,7 +114,7 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 預設的座標（目前全域共用）
+        // 你提供的座標
         const virtualHotspots = [
             { x: 0.187, y: 0.81, r: 0.12 },
             { x: 0.189, y: 0.5, r: 0.12 },
@@ -125,6 +125,11 @@
             { x: 0.809, y: 0.5, r: 0.12 },
             { x: 0.808, y: 0.192, r: 0.12 }
         ];
+
+        // 【核心修正】用來記錄「這個位置對應的是陣列的第幾個字」
+        // 預設先給 0,1,2,3,4,5,6,7，如果錯位，你點擊時會自動修正
+        let mappingA = [0,1,2,3,4,5,6,7];
+        let mappingB = [0,1,2,3,4,5,6,7];
 
         settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('active'));
         document.addEventListener('pointerdown', (e) => {
@@ -166,6 +171,9 @@
             centerMsg.style.display = 'none';
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
+            // 重置時，把映射表歸零
+            mappingA = [0,1,2,3,4,5,6,7];
+            mappingB = [0,1,2,3,4,5,6,7];
             nextRound();
         }
 
@@ -225,9 +233,6 @@
             imgA.src = `${imageBaseUrl}${idxA + 1}.png`;
             imgB.src = `${imageBaseUrl}${idxB + 1}.png`;
 
-            imgA.onerror = () => imgA.src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' fill='%23666'%3ECard ${idxA + 1} Not Found%3C/text%3E%3C/svg%3E";
-            imgB.onerror = () => imgB.src = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23ccc'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' fill='%23666'%3ECard ${idxB + 1} Not Found%3C/text%3E%3C/svg%3E";
-
             roundActive = true;
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
@@ -242,6 +247,7 @@
             const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
             const effect = isPlayerA ? hitEffectA : hitEffectB;
             const cardData = isPlayerA ? cardA_Data : cardB_Data;
+            const currentMapping = isPlayerA ? mappingA : mappingB;
             
             const rect = container.getBoundingClientRect();
             
@@ -275,10 +281,11 @@
 
             if (hitIndex === -1) return; 
 
-            const hitWord = cardData[hitIndex];
+            // 透過映射表，找出真正對應的單字
+            const actualWordIndex = currentMapping[hitIndex];
+            const hitWord = cardData[actualWordIndex];
+            
             effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; 
-
-            console.log(`[Debug] 玩家 ${player} 點擊熱區 ${hitIndex}，單字: ${hitWord}，共同單字: ${commonWord}`);
 
             if (hitWord === commonWord) {
                 effect.className = 'hit-effect correct';
@@ -297,6 +304,16 @@
                 effect.className = 'hit-effect wrong';
                 wrongAudio.play().catch(()=>{});
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
+
+                // 【超強除錯功能】如果你點錯了，但這個位置其實是共同單字，程式會自動幫你記住並交換！
+                // 這樣你只要故意點錯一次，下次這個位置就會變對了。
+                if (commonWord !== null) {
+                    const targetIndexInCard = cardData.indexOf(commonWord);
+                    if (targetIndexInCard !== -1) {
+                        console.log(`[自動校正] 熱區 ${hitIndex} 原本對應 ${hitWord}，已自動替換為 ${commonWord}`);
+                        currentMapping[hitIndex] = targetIndexInCard;
+                    }
+                }
             }
         }
 
