@@ -179,6 +179,9 @@
 
         function nextRound() {
             if (currentCards.length < 2) return;
+
+            // 【測試用】暫時限定只抽前 8 張卡片
+            const testLimit = Math.min(8, currentCards.length); 
             
             // 隨機抽兩張不同的卡
             let idxA = Math.floor(Math.random() * currentCards.length);
