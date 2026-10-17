@@ -184,9 +184,9 @@
             const testLimit = Math.min(8, currentCards.length); 
             
             // 隨機抽兩張不同的卡
-            let idxA = Math.floor(Math.random() * currentCards.length);
-            let idxB = Math.floor(Math.random() * currentCards.length);
-            while (idxA === idxB) idxB = Math.floor(Math.random() * currentCards.length);
+            let idxA = Math.floor(Math.random() * testLimit);
+            let idxB = Math.floor(Math.random() * testLimit);
+            while (idxA === idxB) idxB = Math.floor(Math.random() * testLimit);
 
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
