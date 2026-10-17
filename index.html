@@ -8,11 +8,14 @@
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 齒輪與設置 */
+        /* 齒輪設置按鈕 */
         .settings-btn { position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
         .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
+
+        /* 設置選單面板 */
         .settings-panel { position: absolute; top: 75px; right: 20px; z-index: 40; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 20px; display: none; flex-direction: column; gap: 15px; width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .settings-panel.active { display: flex; }
+        
         .settings-panel label { color: #fff; font-weight: bold; font-size: 0.9rem; }
         #themeSelect { padding: 10px; border-radius: 8px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; width: 100%; }
         
@@ -28,19 +31,26 @@
         
         /* 卡片容器 */
         .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; background: #fff; cursor: pointer; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); margin-top: 30px; }
+        
+        /* 內層旋轉群組 */
         .card-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center; }
         .player-area.left .card-rotator { transform: rotate(90deg); }
         .player-area.right .card-rotator { transform: rotate(-90deg); }
+        
+        /* 圖片與熱區 */
         .card-rotator img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 熱區顯示圈與點擊特效 */
+        /* 熱區顯示圈 (將文字優化，讓除錯更明顯) */
         .hotspot-visual { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
-            background: rgba(255, 0, 0, 0.2); border: 2px solid red; 
+            background: rgba(255, 0, 0, 0.4); border: 2px solid red; 
             transform: translate(-50%, -50%); pointer-events: none; 
             display: none; z-index: 4; align-items: center; justify-content: center; 
-            color: white; font-weight: bold; font-size: 1.2rem; 
+            color: white; font-weight: bold; font-size: 1rem; text-align: center; 
+            text-shadow: 1px 1px 2px black; padding: 5px; word-break: break-all;
         }
+
+        /* 點擊回饋特效 */
         .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -50%); }
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
@@ -52,16 +62,19 @@
 <body>
 
     <div class="settings-btn" id="settingsBtn">⚙️</div>
+
     <div class="settings-panel" id="settingsPanel">
         <div>
             <label>Theme:</label>
             <select id="themeSelect"></select>
         </div>
-        <button class="btn" id="toggleHotspotBtn">👁️ Show Hotspots</button>
+        <!-- 將按鈕改名為 Show Debug Info -->
+        <button class="btn" id="toggleHotspotBtn">👁️ Show Debug Info</button>
         <button class="btn" id="resetBtn">🔄 Restart Game</button>
     </div>
 
     <div class="game-board">
+        <!-- Player A -->
         <div class="player-area left" id="playerA">
             <div class="score-board">Player A: <span id="scoreA">0</span></div>
             <div class="card-container" id="cardContainerA">
@@ -73,6 +86,7 @@
             </div>
         </div>
 
+        <!-- Player B -->
         <div class="player-area right" id="playerB">
             <div class="score-board">Player B: <span id="scoreB">0</span></div>
             <div class="card-container" id="cardContainerB">
@@ -108,13 +122,14 @@
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
         const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
+        
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsPanel = document.getElementById('settingsPanel');
 
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 你提供的座標
+        // 你提供的座標 (目前所有卡片共用)
         const virtualHotspots = [
             { x: 0.187, y: 0.81, r: 0.12 },
             { x: 0.189, y: 0.5, r: 0.12 },
@@ -125,11 +140,6 @@
             { x: 0.809, y: 0.5, r: 0.12 },
             { x: 0.808, y: 0.192, r: 0.12 }
         ];
-
-        // 【核心修正】用來記錄「這個位置對應的是陣列的第幾個字」
-        // 預設先給 0,1,2,3,4,5,6,7，如果錯位，你點擊時會自動修正
-        let mappingA = [0,1,2,3,4,5,6,7];
-        let mappingB = [0,1,2,3,4,5,6,7];
 
         settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('active'));
         document.addEventListener('pointerdown', (e) => {
@@ -171,9 +181,6 @@
             centerMsg.style.display = 'none';
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
-            // 重置時，把映射表歸零
-            mappingA = [0,1,2,3,4,5,6,7];
-            mappingB = [0,1,2,3,4,5,6,7];
             nextRound();
         }
 
@@ -185,24 +192,34 @@
             return null;
         }
 
+        // 繪製熱區，並在圓圈內印出「當前這張卡該位置的單字」
         function drawHotspots() {
             const containerA = document.getElementById('hotspotsA');
             const containerB = document.getElementById('hotspotsB');
             containerA.innerHTML = ''; containerB.innerHTML = '';
 
             virtualHotspots.forEach((spot, index) => {
-                const createSpot = () => {
-                    const div = document.createElement('div');
-                    div.className = 'hotspot-visual';
-                    div.style.left = `${spot.x * 100}%`;
-                    div.style.top = `${spot.y * 100}%`;
-                    div.style.width = `${spot.r * 2 * 100}%`;
-                    div.innerText = index;
-                    div.style.display = showHotspots ? 'flex' : 'none';
-                    return div;
-                };
-                containerA.appendChild(createSpot());
-                containerB.appendChild(createSpot());
+                // A 的熱區
+                const divA = document.createElement('div');
+                divA.className = 'hotspot-visual';
+                divA.style.left = `${spot.x * 100}%`;
+                divA.style.top = `${spot.y * 100}%`;
+                divA.style.width = `${spot.r * 2 * 100}%`;
+                divA.innerHTML = `<span>${index}</span><br><span style="font-size:0.7rem; color:yellow;">${cardA_Data[index]}</span>`;
+                divA.style.display = showHotspots ? 'flex' : 'none';
+                divA.style.flexDirection = 'column';
+                containerA.appendChild(divA);
+
+                // B 的熱區
+                const divB = document.createElement('div');
+                divB.className = 'hotspot-visual';
+                divB.style.left = `${spot.x * 100}%`;
+                divB.style.top = `${spot.y * 100}%`;
+                divB.style.width = `${spot.r * 2 * 100}%`;
+                divB.innerHTML = `<span>${index}</span><br><span style="font-size:0.7rem; color:yellow;">${cardB_Data[index]}</span>`;
+                divB.style.display = showHotspots ? 'flex' : 'none';
+                divB.style.flexDirection = 'column';
+                containerB.appendChild(divB);
             });
         }
 
@@ -212,7 +229,7 @@
             document.querySelectorAll('.hotspot-visual').forEach(el => {
                 el.style.display = showHotspots ? 'flex' : 'none';
             });
-            toggleHotspotBtn.innerText = showHotspots ? '👁️ Hide Hotspots' : '👁️ Show Hotspots';
+            toggleHotspotBtn.innerText = showHotspots ? '👁️ Hide Debug Info' : '👁️ Show Debug Info';
         });
 
         function nextRound() {
@@ -247,7 +264,6 @@
             const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
             const effect = isPlayerA ? hitEffectA : hitEffectB;
             const cardData = isPlayerA ? cardA_Data : cardB_Data;
-            const currentMapping = isPlayerA ? mappingA : mappingB;
             
             const rect = container.getBoundingClientRect();
             
@@ -258,6 +274,8 @@
             effect.style.top = `${displayY * 100}%`;
 
             let clickX, clickY;
+
+            // 反轉座標
             if (isPlayerA) {
                 clickX = displayY;
                 clickY = 1 - displayX;
@@ -281,11 +299,12 @@
 
             if (hitIndex === -1) return; 
 
-            // 透過映射表，找出真正對應的單字
-            const actualWordIndex = currentMapping[hitIndex];
-            const hitWord = cardData[actualWordIndex];
-            
+            const hitWord = cardData[hitIndex];
             effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; 
+
+            // 印出判定過程
+            console.log(`[判定] 玩家 ${player} 點擊熱區 ${hitIndex} (座標: ${clickX.toFixed(2)}, ${clickY.toFixed(2)})`);
+            console.log(`[判定] 該熱區對應單字: "${hitWord}"，本局共同單字: "${commonWord}"`);
 
             if (hitWord === commonWord) {
                 effect.className = 'hit-effect correct';
@@ -304,16 +323,6 @@
                 effect.className = 'hit-effect wrong';
                 wrongAudio.play().catch(()=>{});
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
-
-                // 【超強除錯功能】如果你點錯了，但這個位置其實是共同單字，程式會自動幫你記住並交換！
-                // 這樣你只要故意點錯一次，下次這個位置就會變對了。
-                if (commonWord !== null) {
-                    const targetIndexInCard = cardData.indexOf(commonWord);
-                    if (targetIndexInCard !== -1) {
-                        console.log(`[自動校正] 熱區 ${hitIndex} 原本對應 ${hitWord}，已自動替換為 ${commonWord}`);
-                        currentMapping[hitIndex] = targetIndexInCard;
-                    }
-                }
             }
         }
 
