@@ -2,69 +2,87 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Dobble JSON 順序修改器</title>
+    <title>Dobble JSON 修改與全螢幕預覽</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
-        body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
+        body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; position: relative;}
         
-        /* 左側畫布 */
-        .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        /* --- 左側：看圖點擊區 --- */
+        .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; transition: 0.3s; }
         .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 點擊熱區圈 */
+        /* 熱區圈圈 */
         .hotspot { 
-            position: absolute; width: 20%; aspect-ratio: 1/1; border-radius: 50%; 
-            border: 2px dashed rgba(0, 150, 255, 0.5); background: rgba(0, 150, 255, 0.1);
+            position: absolute; border-radius: 50%; 
+            border: 2px dashed rgba(0, 150, 255, 0.6); background: rgba(0, 150, 255, 0.1);
             transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
             font-weight: bold; color: transparent; transition: 0.2s; cursor: pointer;
         }
         .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
         .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
 
-        /* 右側控制列 */
-        .sidebar { width: 500px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
+        /* --- 右側：控制選單 (可完全收合) --- */
+        .sidebar { 
+            width: 450px; 
+            background: #222; 
+            display: flex; 
+            flex-direction: column; 
+            border-left: 2px solid #444; 
+            height: 100vh; 
+            position: relative;
+            transition: transform 0.3s ease, width 0.3s ease;
+            z-index: 50;
+        }
+        .sidebar.collapsed {
+            transform: translateX(100%);
+            width: 0;
+            border-left: none;
+        }
+
+        /* 側邊欄的收合按鈕 */
+        .toggle-sidebar-btn {
+            position: absolute; top: 20px; left: -45px; width: 40px; height: 40px;
+            background: #e09d32; color: white; border: none; border-radius: 8px 0 0 8px;
+            cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: -4px 0 10px rgba(0,0,0,0.3); transition: 0.2s;
+        }
+        .toggle-sidebar-btn:hover { background: #d18d22; }
+
+        .sidebar-content { padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; height: 100%; }
         
-        /* 控制區塊 */
-        .controls { flex-shrink: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222; }
+        h2 { margin: 0 0 5px 0; font-size: 1.2rem; color: #e09d32; }
+        .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 10px;}
         
-        h2 { margin: 0; font-size: 1.1rem; color: #e09d32; }
-        .hint { font-size: 0.8rem; color: #aaa; line-height: 1.4; margin-bottom: 5px;}
-        
-        input[type="file"], select, button { padding: 10px; font-size: 0.95rem; border-radius: 5px; border: none; width: 100%; box-sizing: border-box; font-weight: bold; }
-        input[type="file"] { background: #333; color: white; border: 1px solid #555; cursor: pointer;}
+        input[type="file"], select, button { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; width: 100%; box-sizing: border-box; font-weight: bold; }
+        input[type="file"] { background: #333; color: white; border: 1px solid #555; cursor: pointer; }
         select { background: #111; color: #fff; border: 1px solid #00aaff; cursor: pointer; }
-        button { background: #4CAF50; color: white; cursor: pointer; font-size: 1rem; }
+        button { background: #4CAF50; color: white; cursor: pointer; transition: 0.1s; }
         button:hover { background: #45a049; }
         button:disabled { background: #555; cursor: not-allowed; }
         
-        .edit-panel { background: #111; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; flex-direction: column; gap: 8px; }
+        .edit-panel { background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; display: none; flex-direction: column; gap: 10px; }
         .edit-panel.active { display: flex; }
-
-        /* 下方超大文字框區塊 (可垂直拉伸) */
-        .json-section { 
-            flex: 1; /* 佔滿剩餘空間 */
-            display: flex; 
-            flex-direction: column; 
-            background: #1a1a1a; 
-            border-top: 2px solid #444; 
-            padding: 10px; 
-            min-height: 150px;
-            resize: vertical; /* 允許垂直拖拉 */
-            overflow: auto;
-        }
         
-        .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
-        .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
+        /* --- 全螢幕文字框 --- */
+        .fullscreen-json {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111;
+            z-index: 100; display: none; flex-direction: column; padding: 20px;
+        }
+        .fullscreen-json.active { display: flex; }
+        
+        .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .json-header h2 { margin: 0; color: #4CAF50; }
         
         textarea { 
-            width: 100%; flex: 1; background: #000; color: #0f0; font-family: monospace; font-size: 0.85rem; 
-            padding: 10px; border: 1px solid #333; border-radius: 5px; resize: none; outline: none; line-height: 1.4;
+            width: 100%; flex: 1; background: #000; color: #0f0; font-family: monospace; font-size: 1rem; 
+            padding: 20px; border: 2px solid #333; border-radius: 10px; resize: none; outline: none; line-height: 1.5;
         }
     </style>
 </head>
 <body>
 
+    <!-- 左側畫布 -->
     <div class="workspace">
         <div class="card-container" id="cardContainer">
             <img id="cardImg" class="card-img" src="" alt="Card">
@@ -72,14 +90,15 @@
         </div>
     </div>
 
-    <div class="sidebar">
-        <div class="controls">
-            <h2>🛠️ JSON 順序修改器</h2>
+    <!-- 右側控制欄 -->
+    <div class="sidebar" id="sidebar">
+        <button class="toggle-sidebar-btn" id="toggleSidebarBtn">☰</button>
+        <div class="sidebar-content">
+            <h2>🛠️ JSON 修改器</h2>
             <div class="hint">
                 1. 載入資料<br>
                 2. 點擊國旗修改文字<br>
-                3. 檢查下方 JSON<br>
-                4. 下載或複製
+                3. 點擊「全螢幕檢視」檢查並下載 JSON
             </div>
 
             <input type="file" id="jsonUpload" accept=".json">
@@ -92,17 +111,22 @@
                 <select id="wordSelect"></select>
             </div>
 
-            <button id="exportBtn" disabled>💾 下載完美 JSON</button>
-            <button id="copyBtn" disabled style="background:#e09d32;">📋 複製 JSON 文字</button>
+            <!-- 觸發全螢幕的按鈕 -->
+            <button id="showFullJsonBtn" disabled style="background: #3498db; margin-top: 20px;">🔍 全螢幕檢視 JSON</button>
         </div>
+    </div>
 
-        <!-- 預覽文字框 -->
-        <div class="json-section">
-            <div class="json-header">
-                <span>📄 即時預覽結果</span>
+    <!-- 全螢幕文字框區塊 -->
+    <div class="fullscreen-json" id="fullscreenJson">
+        <div class="json-header">
+            <h2>📄 即時同步 JSON (全螢幕模式)</h2>
+            <div style="display:flex; gap:10px;">
+                <button id="downloadBtn" style="background:#4CAF50; width:auto; padding: 10px 20px;">💾 下載 JSON</button>
+                <button id="copyBtn" style="background:#e09d32; width:auto; padding: 10px 20px;">📋 複製</button>
+                <button id="closeFullJsonBtn" style="background:#e74c3c; width:auto; padding: 10px 20px;">❌ 關閉</button>
             </div>
-            <textarea id="previewJson" readonly placeholder="載入檔案後，修改文字會即時顯示在這裡..."></textarea>
         </div>
+        <textarea id="previewJson" readonly placeholder="JSON 會即時顯示在這裡..."></textarea>
     </div>
 
     <script>
@@ -111,20 +135,29 @@
         let imageBaseUrl = "";
         let localImages = {};
 
-        // 【還原】你當初提供的精準熱區座標與你設定的完美半徑 (0.12 / 0.17)
+        // 【還原】你當初提供的完美九宮格座標與半徑
         const perfectHotspots = [
-            { x: 0.190, y: 0.189, r: 0.12 }, 
-            { x: 0.501, y: 0.190, r: 0.12 }, 
-            { x: 0.808, y: 0.192, r: 0.12 },
-            { x: 0.189, y: 0.500, r: 0.12 }, 
-            { x: 0.498, y: 0.628, r: 0.17 }, // 中間大圖
-            { x: 0.809, y: 0.500, r: 0.12 },
-            { x: 0.187, y: 0.810, r: 0.12 }, 
-            { x: 0.812, y: 0.811, r: 0.12 }
+            { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
+            { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
+            { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
         ];
 
         let currentCardIdx = 0;
 
+        // 收合側邊欄
+        document.getElementById('toggleSidebarBtn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        });
+
+        // 顯示/關閉全螢幕
+        document.getElementById('showFullJsonBtn').addEventListener('click', () => {
+            document.getElementById('fullscreenJson').classList.add('active');
+        });
+        document.getElementById('closeFullJsonBtn').addEventListener('click', () => {
+            document.getElementById('fullscreenJson').classList.remove('active');
+        });
+
+        // 產生最終 JSON
         function generatePreview() {
             if (!rawData) return;
 
@@ -137,7 +170,7 @@
                         word: words[hIndex],
                         x: Number(spot.x.toFixed(3)),
                         y: Number(spot.y.toFixed(3)),
-                        r: spot.r // 【修復】直接套用上面設定的原始半徑，不再被亂改
+                        r: spot.r 
                     }))
                 };
             });
@@ -165,8 +198,7 @@
                 select.style.display = 'block';
                 select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
                 
-                document.getElementById('exportBtn').disabled = false;
-                document.getElementById('copyBtn').disabled = false;
+                document.getElementById('showFullJsonBtn').disabled = false;
                 
                 loadCard(0);
             };
@@ -191,14 +223,12 @@
 
             const container = document.getElementById('dotsContainer');
             container.innerHTML = '';
-            
-            // 這裡的預覽圈圈直接套用 perfectHotspots 的座標與半徑
             perfectHotspots.forEach((spot, i) => {
                 const div = document.createElement('div');
                 div.className = 'hotspot';
                 div.style.left = `${spot.x * 100}%`;
                 div.style.top = `${spot.y * 100}%`;
-                div.style.width = `${spot.r * 2 * 100}%`; // 套用正確的半徑
+                div.style.width = `${spot.r * 2 * 100}%`; 
                 div.innerText = i;
                 div.addEventListener('pointerdown', (e) => {
                     e.stopPropagation();
@@ -208,7 +238,7 @@
             });
 
             document.getElementById('editPanel').classList.remove('active');
-            generatePreview();
+            generatePreview(); 
         }
 
         function openEditPanel(posIndex) {
@@ -233,12 +263,14 @@
                 const newWord = e.target.value;
                 const newIndex = wordBank.indexOf(newWord);
                 
+                // 直接修改核心陣列，並即時更新文字框
                 rawData.cardsData[currentCardIdx][posIndex] = newIndex;
                 generatePreview(); 
             };
         }
 
-        document.getElementById('exportBtn').addEventListener('click', () => {
+        // 下載按鈕
+        document.getElementById('downloadBtn').addEventListener('click', () => {
             const jsonString = document.getElementById('previewJson').value;
             const blob = new Blob([jsonString], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -250,6 +282,7 @@
             setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
         });
 
+        // 複製按鈕
         document.getElementById('copyBtn').addEventListener('click', () => {
             const ta = document.getElementById('previewJson');
             ta.select();
