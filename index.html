@@ -25,7 +25,7 @@
         .dot.dragging { cursor: grabbing; background: rgba(0, 255, 0, 0.4); border-color: #00ff00; }
 
         /* 右側控制列 */
-        .sidebar { width: 420px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
+        .sidebar { width: 460px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
         /* 可折疊的設定區塊 */
         .settings-toggle {
@@ -35,26 +35,14 @@
         }
         .settings-toggle:hover { background: #444; }
         .settings-toggle .arrow { transition: transform 0.3s; font-size: 1.2rem; }
-        .settings-toggle.collapsed .arrow { transform: rotate(-90deg); } /* 收起時箭頭轉向 */
+        .settings-toggle.collapsed .arrow { transform: rotate(-90deg); }
 
         /* 設定區塊的內容 */
         .settings-content {
-            max-height: 550px; /* 預設最大高度 */
-            overflow-y: auto;
-            transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #222;
+            max-height: 500px; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
+            padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222;
         }
-        .settings-content.collapsed {
-            max-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            opacity: 0;
-            overflow: hidden;
-        }
+        .settings-content.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; overflow: hidden; }
         
         input[type="file"], input[type="text"] { padding: 8px; background: #333; border-radius: 5px; border: 1px solid #555; color: white; width: 100%; font-size: 0.9rem; }
         select, button, input[type="range"] { padding: 10px; font-size: 0.95rem; border-radius: 5px; border: none; width: 100%; cursor: pointer; font-weight: bold; }
@@ -70,32 +58,13 @@
         .section-title { color: #e09d32; font-size: 0.85rem; font-weight: bold; margin-top: 5px;}
         #imgStatus { color: #4CAF50; font-weight: bold; font-size: 0.85rem; text-align: center; }
 
-        /* JSON 區塊 (佔用剩下的所有空間) */
-        .json-section { 
-            flex: 1; /* 核心：撐滿剩餘高度 */
-            display: flex; 
-            flex-direction: column; 
-            background: #1a1a1a;
-            border-top: 2px solid #444;
-            padding: 10px;
-            min-height: 0; /* 允許縮小 */
-        }
-        .json-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px;
-        }
+        /* JSON 區塊 */
+        .json-section { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border-top: 2px solid #444; padding: 10px; min-height: 0; }
+        .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
         .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
         textarea { 
-            width: 100%; 
-            flex: 1; /* 填滿容器 */
-            background: #111; 
-            color: #0f0; 
-            font-family: monospace; 
-            font-size: 0.85rem; 
-            padding: 10px; 
-            border-radius: 5px; 
-            border: 1px solid #555; 
-            resize: none; 
-            outline: none;
+            width: 100%; flex: 1; background: #111; color: #0f0; font-family: monospace; font-size: 0.85rem; 
+            padding: 10px; border-radius: 5px; border: 1px solid #555; resize: none; outline: none; line-height: 1.4;
         }
     </style>
 </head>
@@ -110,18 +79,16 @@
 
     <div class="sidebar">
         
-        <!-- 可折疊的標題列 -->
         <div class="settings-toggle" id="settingsToggle">
             <span>⚙️ 設定與控制區塊</span>
             <span class="arrow">▼</span>
         </div>
 
-        <!-- 可折疊的內容 (包含上傳、選單等) -->
         <div class="settings-content" id="settingsContent">
             <div class="section-title">1. 上傳 JSON</div>
             <input type="file" id="jsonUpload" accept=".json">
             
-            <div class="section-title">2. 載入圖片 (二選一)</div>
+            <div class="section-title">2. 載入圖片</div>
             <input type="file" id="folderUpload" webkitdirectory directory multiple>
             <div id="imgStatus">尚未載入</div>
             <input type="text" id="baseUrlInput" placeholder="或貼上網址...">
@@ -137,10 +104,9 @@
             <button id="exportBtn" class="primary" style="margin-top: 10px;">📋 匯出最終 JSON</button>
         </div>
 
-        <!-- 下方的 JSON 檢視區 -->
         <div class="json-section">
             <div class="json-header">
-                <span>📄 JSON 輸出結果</span>
+                <span>📄 JSON 輸出結果 (已加入卡片名稱)</span>
                 <span style="color:#aaa; font-size:0.8rem; cursor:pointer;" onclick="copyJson()">📋 點擊複製</span>
             </div>
             <textarea id="outputJson" readonly placeholder="點擊上方「匯出最終 JSON」後，這裡會顯示結果..."></textarea>
@@ -149,16 +115,14 @@
     </div>
 
     <script>
-        // --- 折疊邏輯 ---
+        // --- 折疊與複製邏輯 ---
         const settingsToggle = document.getElementById('settingsToggle');
         const settingsContent = document.getElementById('settingsContent');
-        
         settingsToggle.addEventListener('click', () => {
             settingsToggle.classList.toggle('collapsed');
             settingsContent.classList.toggle('collapsed');
         });
 
-        // --- 複製 JSON 快捷鍵 ---
         window.copyJson = function() {
             const textarea = document.getElementById('outputJson');
             if (!textarea.value) return alert('目前沒有內容可複製！');
@@ -167,7 +131,7 @@
             alert('✅ 已複製到剪貼簿！');
         };
 
-        // --- 核心邏輯 ---
+        // --- 核心狀態 ---
         let rawData = null;
         let wordBank = [];
         let cardsData = [];
@@ -216,7 +180,6 @@
         document.getElementById('folderUpload').addEventListener('change', (e) => {
             const files = e.target.files;
             localImageMap = {}; 
-            
             let count = 0;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -225,14 +188,11 @@
                     count++;
                 }
             }
-            
             document.getElementById('imgStatus').innerText = `✅ 已載入 ${count} 張`;
             loadCard(currentCardIndex); 
         });
 
-        document.getElementById('cardSelect').addEventListener('change', (e) => {
-            loadCard(parseInt(e.target.value));
-        });
+        document.getElementById('cardSelect').addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
 
         function loadCard(index) {
             currentCardIndex = index;
@@ -324,10 +284,22 @@
         document.getElementById('exportBtn').addEventListener('click', () => {
             if (!rawData) return;
 
+            // 【核心修改】產生帶有卡片名稱與單字名稱的結構化 JSON
             const newCardsData = cardsData.map((indices, i) => {
+                const currentWords = indices.map(idx => wordBank[idx]);
+                const hotspotsWithWords = localCardsHotspots[i].map((spot, hIndex) => {
+                    return {
+                        word: currentWords[hIndex], // 加上圖案名稱，方便肉眼辨識
+                        x: Number(spot.x.toFixed(3)),
+                        y: Number(spot.y.toFixed(3)),
+                        r: Number(spot.r.toFixed(3))
+                    };
+                });
+
                 return {
+                    cardId: i + 1, // 加上卡片編號
                     words: indices,
-                    hotspots: localCardsHotspots[i]
+                    hotspots: hotspotsWithWords
                 };
             });
 
@@ -338,11 +310,10 @@
 
             document.getElementById('outputJson').value = JSON.stringify(finalJson, null, 4);
             
-            // 匯出後，自動把上面的設定區塊收起來，讓你專心看/複製 JSON
             settingsToggle.classList.add('collapsed');
             settingsContent.classList.add('collapsed');
             
-            alert("✅ 匯出成功！\n設定選單已自動收起，你可以享受超大視窗來檢視或複製 JSON。");
+            alert("✅ 匯出成功！\n設定選單已自動收起，你可以查看超清晰的 JSON。");
         });
     </script>
 </body>
