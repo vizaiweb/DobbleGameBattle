@@ -37,7 +37,7 @@
             background: rgba(255, 0, 0, 0.4); border: 2px solid red; 
             transform: translate(-50%, -50%); pointer-events: none; 
             display: none; z-index: 4; align-items: center; justify-content: center; flex-direction: column;
-            color: white; font-weight: bold; font-size: 1rem; text-align: center; 
+            color: white; font-weight: bold; font-size: 0.8rem; text-align: center; 
             text-shadow: 1px 1px 2px black; padding: 5px; word-break: break-word; line-height: 1.1;
         }
 
@@ -46,6 +46,11 @@
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
+
+        /* 新增：隱藏的文字綁定下拉選單 */
+        .word-selector {
+            position: absolute; z-index: 50; display: none; padding: 10px; font-size: 1rem; border-radius: 5px; border: 2px solid #e09d32; font-weight: bold; transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
@@ -85,6 +90,7 @@
     </div>
 
     <div class="center-message" id="centerMsg">Game Start!</div>
+    <select id="wordSelector" class="word-selector"></select>
 
     <script>
         let currentThemeId = null;
@@ -98,6 +104,10 @@
         let cardA_Data = null, cardB_Data = null;
         let currentIdxA = -1, currentIdxB = -1;
 
+        // 暫存正在修正的目標
+        let targetPlayer = null;
+        let targetIndex = -1;
+
         const themeSelect = document.getElementById('themeSelect');
         const imgA = document.getElementById('imgA');
         const imgB = document.getElementById('imgB');
@@ -109,25 +119,25 @@
         const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
         const settingsBtn = document.getElementById('settingsBtn');
         const settingsPanel = document.getElementById('settingsPanel');
+        const wordSelector = document.getElementById('wordSelector');
 
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        // 【最終完美座標】對應你排版引擎的固定順序：左上、中上、右上、左中、正中、右中、左下、右下
+        // 預設九宮格座標 (對應排版順序)
         const virtualHotspots = [
-            { x: 0.190, y: 0.189, r: 0.12 }, // 0: 左上
-            { x: 0.501, y: 0.190, r: 0.12 }, // 1: 中上
-            { x: 0.808, y: 0.192, r: 0.12 }, // 2: 右上
-            { x: 0.189, y: 0.500, r: 0.12 }, // 3: 左中
-            { x: 0.498, y: 0.628, r: 0.17 }, // 4: 正中 (最大)
-            { x: 0.809, y: 0.500, r: 0.12 }, // 5: 右中
-            { x: 0.187, y: 0.810, r: 0.12 }, // 6: 左下
-            { x: 0.812, y: 0.811, r: 0.12 }  // 7: 右下
+            { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
+            { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
+            { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
         ];
+
+        // 用來儲存「修正後」的資料，不會影響原始 JSON
+        let correctedCardsData = [];
 
         settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('active'));
         document.addEventListener('pointerdown', (e) => {
             if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) settingsPanel.classList.remove('active');
+            if (!wordSelector.contains(e.target)) wordSelector.style.display = 'none';
         });
 
         async function init() {
@@ -154,8 +164,8 @@
                 wordBank = data.wordBank;
                 imageBaseUrl = data.imageBaseUrl;
                 
-                // 直接將索引轉換為單字
-                currentCards = data.cardsData.map(indices => indices.map(idx => wordBank[idx]));
+                // 複製一份準備修正的資料
+                correctedCardsData = data.cardsData.map(indices => indices.map(idx => wordBank[idx]));
                 resetGame();
             } catch (e) { console.error(`Failed to load theme ${themeId}`, e); }
         }
@@ -216,19 +226,19 @@
         });
 
         function nextRound() {
-            if (currentCards.length < 2) return;
+            if (correctedCardsData.length < 2) return;
             let idxA, idxB;
             do {
-                idxA = Math.floor(Math.random() * currentCards.length);
-                idxB = Math.floor(Math.random() * currentCards.length);
-                while (idxA === idxB) idxB = Math.floor(Math.random() * currentCards.length);
-                commonWord = findCommonWord(currentCards[idxA], currentCards[idxB]);
+                idxA = Math.floor(Math.random() * correctedCardsData.length);
+                idxB = Math.floor(Math.random() * correctedCardsData.length);
+                while (idxA === idxB) idxB = Math.floor(Math.random() * correctedCardsData.length);
+                commonWord = findCommonWord(correctedCardsData[idxA], correctedCardsData[idxB]);
             } while (!commonWord);
 
             currentIdxA = idxA;
             currentIdxB = idxB;
-            cardA_Data = currentCards[idxA];
-            cardB_Data = currentCards[idxB];
+            cardA_Data = correctedCardsData[idxA];
+            cardB_Data = correctedCardsData[idxB];
 
             imgA.src = `${imageBaseUrl}${idxA + 1}.png`;
             imgB.src = `${imageBaseUrl}${idxB + 1}.png`;
@@ -280,6 +290,14 @@
 
             if (hitIndex === -1) return; 
 
+            // 🔥 如果按住 Shift 點擊，跳出修正選單
+            if (event.shiftKey) {
+                targetPlayer = player;
+                targetIndex = hitIndex;
+                showWordSelector(event.clientX, event.clientY);
+                return; 
+            }
+
             const hitWord = cardData[hitIndex];
             effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; 
 
@@ -303,10 +321,43 @@
             }
         }
 
-        function showCenterMessage(text) {
-            centerMsg.innerText = text;
-            centerMsg.style.display = 'block';
+        // 顯示文字選單
+        function showWordSelector(clientX, clientY) {
+            wordSelector.innerHTML = '<option value="">-- 選擇正確圖案 --</option>';
+            wordBank.forEach(word => {
+                const opt = document.createElement('option');
+                opt.value = word;
+                opt.textContent = word;
+                wordSelector.appendChild(opt);
+            });
+            wordSelector.style.left = `${clientX}px`;
+            wordSelector.style.top = `${clientY}px`;
+            wordSelector.style.display = 'block';
         }
+
+        // 當使用者在下拉選單選了正確答案
+        wordSelector.addEventListener('change', (e) => {
+            const selectedWord = e.target.value;
+            if (!selectedWord) return;
+
+            const isA = targetPlayer === 'A';
+            const targetArray = isA ? cardA_Data : cardB_Data;
+
+            // 覆寫該位置的單字
+            targetArray[targetIndex] = selectedWord;
+
+            // 存回我們暫存的陣列中
+            if (isA) correctedCardsData[currentIdxA] = [...targetArray];
+            else correctedCardsData[currentIdxB] = [...targetArray];
+
+            wordSelector.style.display = 'none';
+            
+            console.log(`【卡片 ${isA ? currentIdxA+1 : currentIdxB+1} 修正結果】`, targetArray);
+            
+            // 更新紅圈文字顯示
+            drawHotspots();
+            alert(`已將位置 ${targetIndex} 綁定為: ${selectedWord}\n(請查看 Console 確認更新後的陣列)`);
+        });
 
         document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'A'));
         document.getElementById('cardContainerB').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'B'));
