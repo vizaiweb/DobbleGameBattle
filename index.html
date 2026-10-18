@@ -62,10 +62,14 @@
         .json-section { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border-top: 2px solid #444; padding: 10px; min-height: 0; }
         .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
         .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
+        
+        /* 允許編輯，並加上藍色邊框提示 */
         textarea { 
             width: 100%; flex: 1; background: #111; color: #0f0; font-family: monospace; font-size: 0.85rem; 
-            padding: 10px; border-radius: 5px; border: 1px solid #555; resize: none; outline: none; line-height: 1.4;
+            padding: 10px; border-radius: 5px; border: 1px solid #00aaff; resize: none; outline: none; line-height: 1.4;
+            user-select: text; /* 允許選取文字 */
         }
+        textarea:focus { border-color: #ffeb3b; box-shadow: 0 0 10px rgba(255, 235, 59, 0.3); }
     </style>
 </head>
 <body>
@@ -106,10 +110,10 @@
 
         <div class="json-section">
             <div class="json-header">
-                <span>📄 JSON 輸出結果 (已加入卡片名稱)</span>
+                <span>📄 JSON 輸出結果 (可手動編輯)</span>
                 <span style="color:#aaa; font-size:0.8rem; cursor:pointer;" onclick="copyJson()">📋 點擊複製</span>
             </div>
-            <textarea id="outputJson" readonly placeholder="點擊上方「匯出最終 JSON」後，這裡會顯示結果..."></textarea>
+            <textarea id="outputJson" placeholder="點擊上方「匯出最終 JSON」後，這裡會顯示結果。你可以直接在這裡修改參數！"></textarea>
         </div>
 
     </div>
@@ -313,7 +317,7 @@
             settingsToggle.classList.add('collapsed');
             settingsContent.classList.add('collapsed');
             
-            alert("✅ 匯出成功！\n設定選單已自動收起，你可以查看超清晰的 JSON。");
+            alert("✅ 匯出成功！\n\n現在文字框已經是「可編輯」狀態。你可以直接在裡面修改數字，改完後點擊右上角的「📋 點擊複製」。");
         });
     </script>
 </body>
