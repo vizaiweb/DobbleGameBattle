@@ -9,7 +9,7 @@
         
         /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
-        .card-container { position: relative; width: 80vh; max-width: 90vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card-container { position: relative; width: 85vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
         /* 熱區圓圈 */
@@ -25,22 +25,49 @@
         .dot.dragging { cursor: grabbing; background: rgba(0, 255, 0, 0.4); border-color: #00ff00; }
 
         /* 右側控制列 */
-        .sidebar { width: 400px; background: #222; padding: 20px; display: flex; flex-direction: column; gap: 15px; border-left: 2px solid #444; overflow-y: auto; }
-        input[type="file"], input[type="text"] { padding: 10px; background: #333; border-radius: 5px; border: 1px solid #555; color: white; width: 100%; box-sizing: border-box; }
-        select, button, input[type="range"] { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; width: 100%; cursor: pointer; font-weight: bold; box-sizing: border-box; }
+        .sidebar { width: 420px; background: #222; padding: 15px; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
+        
+        /* 上半部：控制區 */
+        .controls { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        
+        input[type="file"], input[type="text"] { padding: 8px; background: #333; border-radius: 5px; border: 1px solid #555; color: white; width: 100%; box-sizing: border-box; font-size: 0.9rem;}
+        select, button, input[type="range"] { padding: 10px; font-size: 0.95rem; border-radius: 5px; border: none; width: 100%; cursor: pointer; font-weight: bold; box-sizing: border-box; }
         button { background: #e09d32; color: white; }
         button:hover { background: #d18d22; }
         button.primary { background: #4CAF50; }
         button.primary:hover { background: #45a049; }
         
-        .slider-box { background: #111; padding: 15px; border-radius: 8px; display: none; }
-        input[type="range"] { padding: 0; margin-top: 10px; }
+        .slider-box { background: #111; padding: 10px; border-radius: 8px; display: none; }
+        input[type="range"] { padding: 0; margin-top: 5px; }
         
-        textarea { width: 100%; height: 150px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 5px; border: 1px solid #555; box-sizing: border-box; }
-        
-        .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; }
-        .section-title { color: #e09d32; font-size: 0.9rem; margin-bottom: -5px; font-weight: bold;}
-        #imgStatus { color: #4CAF50; font-weight: bold; font-size: 0.9rem; text-align: center; }
+        .hint { font-size: 0.8rem; color: #aaa; line-height: 1.3; }
+        .section-title { color: #e09d32; font-size: 0.85rem; font-weight: bold; margin-top: 5px;}
+        #imgStatus { color: #4CAF50; font-weight: bold; font-size: 0.85rem; text-align: center; }
+
+        /* 下半部：JSON 編輯區 (可拉大) */
+        .json-section { 
+            flex: 1; /* 佔滿剩餘空間 */ 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 150px; /* 預設最小高度 */
+            resize: vertical; /* 允許垂直拖拉 */
+            overflow: auto; 
+            border-top: 2px solid #444; 
+            padding-top: 10px;
+        }
+        textarea { 
+            width: 100%; 
+            flex: 1; /* 填滿容器 */
+            background: #111; 
+            color: #0f0; 
+            font-family: monospace; 
+            font-size: 0.85rem; 
+            padding: 10px; 
+            border-radius: 5px; 
+            border: 1px solid #555; 
+            resize: none; /* 交給外面的 div 控制 */
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -53,29 +80,32 @@
     </div>
 
     <div class="sidebar">
-        <h2 style="margin:0;">🛠️ 座標標註工具</h2>
-        
-        <div class="section-title">1. 上傳 JSON</div>
-        <input type="file" id="jsonUpload" accept=".json">
-        
-        <div class="section-title">2. 載入圖片 (二選一)</div>
-        <input type="file" id="folderUpload" webkitdirectory directory multiple>
-        <div id="imgStatus">尚未載入圖片</div>
-        <div class="hint" style="text-align:center; margin:-10px 0;">或貼上 GitHub 網址</div>
-        <input type="text" id="baseUrlInput" placeholder="https://.../images/Common_knowledge_NF/">
-        
-        <div class="section-title">3. 選擇卡片開始標註</div>
-        <select id="cardSelect"></select>
+        <div class="controls">
+            <h2 style="margin:0 0 5px 0; font-size: 1.2rem;">🛠️ 標註工具</h2>
+            
+            <div class="section-title">1. 上傳 JSON</div>
+            <input type="file" id="jsonUpload" accept=".json">
+            
+            <div class="section-title">2. 載入圖片</div>
+            <input type="file" id="folderUpload" webkitdirectory directory multiple>
+            <div id="imgStatus">尚未載入</div>
+            <input type="text" id="baseUrlInput" placeholder="或貼上網址...">
+            
+            <div class="section-title">3. 選擇卡片</div>
+            <select id="cardSelect"></select>
 
-        <div class="slider-box" id="sliderBox">
-            <label style="color:#00aaff;">選取圓圈 (<span id="selectedIdx">-</span>) 半徑：<span id="rVal">0.15</span></label>
-            <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.15">
+            <div class="slider-box" id="sliderBox">
+                <label style="color:#00aaff;">選取圓圈 (<span id="selectedIdx">-</span>) 半徑：<span id="rVal">0.15</span></label>
+                <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.15">
+            </div>
+
+            <button id="exportBtn" class="primary" style="margin-top: 10px;">📋 匯出最終 JSON</button>
         </div>
 
-        <button id="saveCardBtn">💾 儲存這張卡進度</button>
-        <button id="exportBtn" class="primary">📋 匯出最終 JSON</button>
-        
-        <textarea id="outputJson" readonly placeholder="點擊匯出後，這裡會顯示完整 JSON..."></textarea>
+        <!-- JSON 文字框區塊 -->
+        <div class="json-section">
+            <textarea id="outputJson" readonly placeholder="點擊匯出後，這裡會顯示完整 JSON，你可以往下拉大這個區塊來查看..."></textarea>
+        </div>
     </div>
 
     <script>
@@ -88,7 +118,7 @@
         let selectedIndex = -1;
         let draggedDot = null;
 
-        let localImageMap = {}; // 儲存本機圖片的 Blob URL
+        let localImageMap = {};
 
         const defaultHotspots = [
             { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
@@ -96,7 +126,6 @@
             { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
         ];
 
-        // 1. 上傳 JSON
         document.getElementById('jsonUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
@@ -125,24 +154,21 @@
             reader.readAsText(file);
         });
 
-        // 2. 上傳本機資料夾 (修復讀取 Bug)
         document.getElementById('folderUpload').addEventListener('change', (e) => {
             const files = e.target.files;
-            localImageMap = {}; // 清空舊資料
+            localImageMap = {}; 
             
             let count = 0;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                // 只要是圖片檔就加入 (包含 png, jpg 等)
                 if (file.type.startsWith('image/')) {
-                    const blobUrl = URL.createObjectURL(file);
-                    localImageMap[file.name] = blobUrl;
+                    localImageMap[file.name] = URL.createObjectURL(file);
                     count++;
                 }
             }
             
-            document.getElementById('imgStatus').innerText = `✅ 已成功載入 ${count} 張圖片`;
-            loadCard(currentCardIndex); // 重新載入當前卡片
+            document.getElementById('imgStatus').innerText = `✅ 已載入 ${count} 張`;
+            loadCard(currentCardIndex); 
         });
 
         document.getElementById('cardSelect').addEventListener('change', (e) => {
@@ -153,7 +179,6 @@
             currentCardIndex = index;
             const fileName = `${index + 1}.png`;
             
-            // 判斷要使用本機圖片，還是網路圖片
             if (localImageMap[fileName]) {
                 document.getElementById('cardImg').src = localImageMap[fileName];
             } else {
@@ -168,7 +193,6 @@
             renderDots();
         }
 
-        // 當網址改變時，重新整理圖片
         document.getElementById('baseUrlInput').addEventListener('change', () => loadCard(currentCardIndex));
 
         function renderDots() {
@@ -238,10 +262,6 @@
             if (dot) dot.style.width = `${val * 2 * 100}%`;
         });
 
-        document.getElementById('saveCardBtn').addEventListener('click', () => {
-            alert(`卡片 ${currentCardIndex + 1} 進度已儲存！請切換下一張。`);
-        });
-
         document.getElementById('exportBtn').addEventListener('click', () => {
             if (!rawData) return;
 
@@ -258,7 +278,8 @@
             };
 
             document.getElementById('outputJson').value = JSON.stringify(finalJson, null, 4);
-            alert("✅ 匯出成功！請複製下方文字框的內容，覆蓋你的 JSON。");
+            // 提示使用者可以拉大文字框
+            alert("✅ 匯出成功！\n\n你可以將滑鼠移到下方文字框的上方邊緣，按住並往上拖曳，就能把文字框拉大來檢視或複製內容。");
         });
     </script>
 </body>
