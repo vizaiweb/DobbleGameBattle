@@ -7,12 +7,10 @@
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
-        /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
         .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 熱區圈圈 (強制正圓形) */
         .hotspot { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             border: 2px dashed rgba(0, 150, 255, 0.6); background: rgba(0, 150, 255, 0.1);
@@ -22,10 +20,8 @@
         .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
         .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
 
-        /* 右側控制列 */
         .sidebar { width: 480px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
-        /* 可折疊的設定區塊 */
         .settings-toggle {
             background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
@@ -35,7 +31,6 @@
         .settings-toggle .arrow { transition: transform 0.3s; font-size: 1.2rem; }
         .settings-toggle.collapsed .arrow { transform: rotate(-90deg); }
 
-        /* 設定區塊的內容 */
         .settings-content {
             max-height: 550px; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
             padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222;
@@ -59,7 +54,6 @@
         input[type="range"] { flex: 1; cursor: pointer; }
         .slider-val { color: #00aaff; font-weight: bold; min-width: 40px; text-align: right; }
 
-        /* JSON 文字框 (佔滿剩餘高度) */
         .json-section { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border-top: 2px solid #444; padding: 10px; min-height: 0; }
         .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
         .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
@@ -79,19 +73,17 @@
     </div>
 
     <div class="sidebar">
-        <!-- 可折疊的標題 -->
         <div class="settings-toggle" id="settingsToggle">
             <span>⚙️ 設定與控制區塊</span>
             <span class="arrow">▼</span>
         </div>
 
-        <!-- 可折疊的內容 -->
         <div class="settings-content" id="settingsContent">
             <h2>🛠️ JSON 修改器</h2>
             <div class="hint">
-                1. 載入資料<br>
+                1. 載入資料與圖片<br>
                 2. 點擊國旗修改文字與大小<br>
-                3. 收合此面板，即可查看超大 JSON
+                3. 下載完美格式的 JSON
             </div>
 
             <input type="file" id="jsonUpload" accept=".json">
@@ -110,11 +102,10 @@
                 </div>
             </div>
 
-            <button id="exportBtn" disabled>💾 下載完美 JSON</button>
+            <button id="exportBtn" disabled>💾 下載 JSON</button>
             <button id="copyBtn" disabled style="background:#e09d32;">📋 複製 JSON 文字</button>
         </div>
 
-        <!-- 下方超大 JSON 區塊 -->
         <div class="json-section">
             <div class="json-header">
                 <span>📄 即時同步 JSON</span>
@@ -129,7 +120,6 @@
         let imageBaseUrl = "";
         let localImages = {};
 
-        // 【原封不動保留】你當初提供的完美九宮格座標與半徑
         let perfectHotspots = [
             { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
             { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
@@ -137,9 +127,7 @@
         ];
 
         let currentCardIdx = 0;
-        let selectedPosIndex = -1;
 
-        // --- 折疊邏輯 ---
         const settingsToggle = document.getElementById('settingsToggle');
         const settingsContent = document.getElementById('settingsContent');
         settingsToggle.addEventListener('click', () => {
@@ -147,68 +135,58 @@
             settingsContent.classList.toggle('collapsed');
         });
 
-        // --- 安全生成 JSON ---
+        // 【核心】100% 保留你上傳的格式，只更新文字與大小
         function generatePreview() {
             if (!rawData) return;
-            try {
-                const finalCards = rawData.cardsData.map((indices, i) => {
-                    const words = indices.map(idx => wordBank[idx]);
-                    return {
-                        cardId: i + 1,
-                        words: indices,
-                        hotspots: perfectHotspots.map((spot, hIndex) => ({
-                            word: words[hIndex],
-                            x: Number(spot.x.toFixed(3)),
-                            y: Number(spot.y.toFixed(3)),
-                            r: Number(spot.r.toFixed(3))
-                        }))
-                    };
-                });
+            
+            const finalCards = rawData.cardsData.map((card, i) => {
+                // 取得數字陣列與對應文字
+                const indices = Array.isArray(card) ? card : card.words;
+                const words = indices.map(idx => wordBank[idx]);
+                
+                // 生成最新的熱區資料
+                const newHotspots = perfectHotspots.map((spot, hIndex) => ({
+                    word: words[hIndex],
+                    x: Number(spot.x.toFixed(3)),
+                    y: Number(spot.y.toFixed(3)),
+                    r: Number(spot.r.toFixed(3))
+                }));
 
-                const finalJson = { 
-                    setId: rawData.setId,
-                    setName: rawData.setName,
-                    imageBaseUrl: rawData.imageBaseUrl,
-                    wordBank: rawData.wordBank,
-                    cardsData: finalCards,
-                    answerCards: rawData.answerCards,
-                    totalCards: rawData.totalCards,
-                    wordsPerCard: rawData.wordsPerCard
-                };
+                // 如果原本是陣列格式，輸出時幫你包成物件（因為要有熱區）
+                // 如果原本是物件格式，則直接更新內容
+                if (Array.isArray(card)) {
+                    return { cardId: i + 1, words: indices, hotspots: newHotspots };
+                } else {
+                    return { ...card, words: indices, hotspots: newHotspots };
+                }
+            });
 
-                const validatedString = JSON.stringify(JSON.parse(JSON.stringify(finalJson)), null, 4);
-                document.getElementById('previewJson').value = validatedString;
-            } catch (error) {
-                alert("❌ JSON 生成異常！\n錯誤: " + error.message);
-            }
+            const finalJson = { ...rawData, cardsData: finalCards };
+            document.getElementById('previewJson').value = JSON.stringify(finalJson, null, 4);
         }
 
         document.getElementById('jsonUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = (ev) => {
-                try {
-                    rawData = JSON.parse(ev.target.result);
-                    wordBank = rawData.wordBank;
-                    imageBaseUrl = rawData.imageBaseUrl;
-                    
-                    const select = document.getElementById('cardSelect');
-                    select.innerHTML = '';
-                    rawData.cardsData.forEach((_, i) => {
-                        const opt = document.createElement('option');
-                        opt.value = i;
-                        opt.textContent = `卡片 ${i + 1}`;
-                        select.appendChild(opt);
-                    });
-                    select.style.display = 'block';
-                    select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
-                    
-                    document.getElementById('exportBtn').disabled = false;
-                    document.getElementById('copyBtn').disabled = false;
-                    loadCard(0);
-                } catch (err) {
-                    alert("上傳的 JSON 檔案格式有誤。");
-                }
+                rawData = JSON.parse(ev.target.result);
+                wordBank = rawData.wordBank;
+                imageBaseUrl = rawData.imageBaseUrl;
+                
+                const select = document.getElementById('cardSelect');
+                select.innerHTML = '';
+                rawData.cardsData.forEach((_, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = `卡片 ${i + 1}`;
+                    select.appendChild(opt);
+                });
+                select.style.display = 'block';
+                select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
+                
+                document.getElementById('exportBtn').disabled = false;
+                document.getElementById('copyBtn').disabled = false;
+                loadCard(0);
             };
             reader.readAsText(file);
         });
@@ -246,18 +224,18 @@
             });
 
             document.getElementById('editPanel').classList.remove('active');
-            selectedPosIndex = -1;
             generatePreview(); 
         }
 
         function openEditPanel(posIndex) {
-            selectedPosIndex = posIndex;
             document.querySelectorAll('.hotspot').forEach((el, i) => el.classList.toggle('active', i === posIndex));
             document.getElementById('editPanel').classList.add('active');
             document.getElementById('posIndex').innerText = posIndex;
 
             const wordSelect = document.getElementById('wordSelect');
-            const currentIdxInCard = rawData.cardsData[currentCardIdx][posIndex];
+            const currentCard = rawData.cardsData[currentCardIdx];
+            const indices = Array.isArray(currentCard) ? currentCard : currentCard.words;
+            const currentIdxInCard = indices[posIndex];
             const currentWord = wordBank[currentIdxInCard];
 
             wordSelect.innerHTML = '';
@@ -272,7 +250,14 @@
             wordSelect.onchange = (e) => {
                 const newWord = e.target.value;
                 const newIndex = wordBank.indexOf(newWord);
-                rawData.cardsData[currentCardIdx][posIndex] = newIndex;
+                
+                // 更新記憶體中的數字
+                if (Array.isArray(rawData.cardsData[currentCardIdx])) {
+                    rawData.cardsData[currentCardIdx][posIndex] = newIndex;
+                } else {
+                    rawData.cardsData[currentCardIdx].words[posIndex] = newIndex;
+                }
+                
                 generatePreview(); 
             };
 
