@@ -26,8 +26,8 @@
 
         /* 右側控制列 */
         .sidebar { width: 400px; background: #222; padding: 20px; display: flex; flex-direction: column; gap: 15px; border-left: 2px solid #444; overflow-y: auto; }
-        input[type="file"] { padding: 10px; background: #333; border-radius: 5px; border: 1px solid #555; }
-        select, button, input[type="range"] { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; width: 100%; cursor: pointer; font-weight: bold; }
+        input[type="file"], input[type="text"] { padding: 10px; background: #333; border-radius: 5px; border: 1px solid #555; color: white; width: 100%; box-sizing: border-box; }
+        select, button, input[type="range"] { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; width: 100%; cursor: pointer; font-weight: bold; box-sizing: border-box; }
         button { background: #e09d32; color: white; }
         button:hover { background: #d18d22; }
         button.primary { background: #4CAF50; }
@@ -36,9 +36,10 @@
         .slider-box { background: #111; padding: 15px; border-radius: 8px; display: none; }
         input[type="range"] { padding: 0; margin-top: 10px; }
         
-        textarea { width: 100%; height: 150px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 5px; border: 1px solid #555; }
+        textarea { width: 100%; height: 150px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 5px; border: 1px solid #555; box-sizing: border-box; }
         
         .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; }
+        .section-title { color: #e09d32; font-size: 0.9rem; margin-bottom: -5px; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -52,10 +53,16 @@
 
     <div class="sidebar">
         <h2 style="margin:0;">🛠️ 座標標註工具</h2>
-        <p class="hint">1. 上傳你的 JSON<br>2. 選擇卡片<br>3. 把藍圈拖到對應的國旗上<br>4. 點擊藍圈可用滑桿調大小<br>5. 全部標完後匯出</p>
         
+        <div class="section-title">1. 上傳 JSON</div>
         <input type="file" id="jsonUpload" accept=".json">
         
+        <div class="section-title">2. 設定圖片路徑 (二選一)</div>
+        <input type="text" id="baseUrlInput" placeholder="貼上 GitHub 圖片網址 (例如: https://.../images/Common_knowledge_NF/)">
+        <div class="hint" style="text-align:center; margin:-10px 0;">或</div>
+        <input type="file" id="folderUpload" webkitdirectory directory multiple>
+        
+        <div class="section-title">3. 選擇卡片開始標註</div>
         <select id="cardSelect"></select>
 
         <div class="slider-box" id="sliderBox">
@@ -72,37 +79,37 @@
     <script>
         let rawData = null;
         let wordBank = [];
-        let imageBaseUrl = "";
         let cardsData = [];
         
         let currentCardIndex = 0;
-        let localCardsHotspots = []; // 儲存每張卡的熱區
-        
+        let localCardsHotspots = []; 
         let selectedIndex = -1;
         let draggedDot = null;
 
-        // 預設的中心點，第一次載入時使用
+        let localImageMap = {}; // 儲存本機圖片的 Blob URL
+
         const defaultHotspots = [
             { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
             { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
             { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
         ];
 
+        // 1. 上傳 JSON
         document.getElementById('jsonUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = (ev) => {
                 rawData = JSON.parse(ev.target.result);
                 wordBank = rawData.wordBank;
-                imageBaseUrl = rawData.imageBaseUrl;
                 cardsData = rawData.cardsData;
 
-                // 初始化 57 張卡的熱區資料
-                localCardsHotspots = cardsData.map(() => {
-                    return defaultHotspots.map(h => ({...h})); 
-                });
+                // 預設圖片路徑
+                if (!document.getElementById('baseUrlInput').value) {
+                    document.getElementById('baseUrlInput').value = rawData.imageBaseUrl || "";
+                }
 
-                // 建立下拉選單
+                localCardsHotspots = cardsData.map(() => defaultHotspots.map(h => ({...h})));
+
                 const select = document.getElementById('cardSelect');
                 select.innerHTML = '';
                 cardsData.forEach((_, i) => {
@@ -117,24 +124,50 @@
             reader.readAsText(file);
         });
 
+        // 2. 上傳本機資料夾 (最推薦，因為圖片就在本機)
+        document.getElementById('folderUpload').addEventListener('change', (e) => {
+            const files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.name.endsWith('.png')) {
+                    const blobUrl = URL.createObjectURL(file);
+                    localImageMap[file.name] = blobUrl;
+                }
+            }
+            loadCard(currentCardIndex); // 重新載入當前卡片
+            alert(`成功載入 ${Object.keys(localImageMap).length} 張本機圖片！`);
+        });
+
         document.getElementById('cardSelect').addEventListener('change', (e) => {
             loadCard(parseInt(e.target.value));
         });
 
         function loadCard(index) {
             currentCardIndex = index;
-            document.getElementById('cardImg').src = `${imageBaseUrl}${index + 1}.png`;
+            const fileName = `${index + 1}.png`;
+            
+            // 判斷要使用本機圖片，還是網路圖片
+            if (localImageMap[fileName]) {
+                document.getElementById('cardImg').src = localImageMap[fileName];
+            } else {
+                let base = document.getElementById('baseUrlInput').value;
+                if (base && !base.endsWith('/')) base += '/';
+                document.getElementById('cardImg').src = base + fileName;
+            }
+
             document.getElementById('cardSelect').value = index;
             selectedIndex = -1;
             document.getElementById('sliderBox').style.display = 'none';
             renderDots();
         }
 
+        // 當網址改變時，重新整理圖片
+        document.getElementById('baseUrlInput').addEventListener('change', () => loadCard(currentCardIndex));
+
         function renderDots() {
             const container = document.getElementById('dotsContainer');
             container.innerHTML = '';
             
-            // 取得這張卡的單字
             const currentWords = cardsData[currentCardIndex].map(idx => wordBank[idx]);
             const hotspots = localCardsHotspots[currentCardIndex];
 
@@ -144,8 +177,6 @@
                 div.style.left = `${spot.x * 100}%`;
                 div.style.top = `${spot.y * 100}%`;
                 div.style.width = `${spot.r * 2 * 100}%`;
-                
-                // 顯示對應的單字
                 div.innerHTML = `<span>${currentWords[i]}</span>`;
                 
                 if (selectedIndex === i) div.classList.add('selected');
@@ -201,13 +232,12 @@
         });
 
         document.getElementById('saveCardBtn').addEventListener('click', () => {
-            alert(`卡片 ${currentCardIndex + 1} 的座標已記錄！請切換下一張。`);
+            alert(`卡片 ${currentCardIndex + 1} 進度已儲存！請切換下一張。`);
         });
 
         document.getElementById('exportBtn').addEventListener('click', () => {
             if (!rawData) return;
 
-            // 將原本的卡片陣列與新的熱區資料合併
             const newCardsData = cardsData.map((indices, i) => {
                 return {
                     words: indices,
@@ -221,7 +251,7 @@
             };
 
             document.getElementById('outputJson').value = JSON.stringify(finalJson, null, 4);
-            alert("✅ 匯出成功！請複製下方文字框的內容，覆蓋你的 JSON 檔案。");
+            alert("✅ 匯出成功！請複製下方文字框的內容，覆蓋你的 JSON。");
         });
     </script>
 </body>
