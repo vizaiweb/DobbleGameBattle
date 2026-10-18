@@ -2,16 +2,17 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Dobble JSON 順序修改器 (即時同步版)</title>
+    <title>Dobble JSON 順序修改器</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
+        /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
-        .card-container { position: relative; width: 75vh; max-width: 90vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
+        .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 點擊圈圈 */
+        /* 點擊熱區圈 */
         .hotspot { 
             position: absolute; width: 20%; aspect-ratio: 1/1; border-radius: 50%; 
             border: 2px dashed rgba(0, 150, 255, 0.5); background: rgba(0, 150, 255, 0.1);
@@ -21,24 +22,45 @@
         .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
         .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
 
-        /* 側邊欄 */
-        .sidebar { width: 480px; background: #222; padding: 15px; display: flex; flex-direction: column; gap: 10px; border-left: 2px solid #444; height: 100vh; overflow-y: auto; }
+        /* 右側控制列 */
+        .sidebar { width: 500px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
-        h2 { margin: 0; font-size: 1.2rem; color: #e09d32; }
-        .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; margin-bottom: 5px;}
+        /* 控制區塊 */
+        .controls { flex-shrink: 0; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222; }
+        
+        h2 { margin: 0; font-size: 1.1rem; color: #e09d32; }
+        .hint { font-size: 0.8rem; color: #aaa; line-height: 1.4; margin-bottom: 5px;}
         
         input[type="file"], select, button { padding: 10px; font-size: 0.95rem; border-radius: 5px; border: none; width: 100%; box-sizing: border-box; font-weight: bold; }
         input[type="file"] { background: #333; color: white; border: 1px solid #555; cursor: pointer;}
         select { background: #111; color: #fff; border: 1px solid #00aaff; cursor: pointer; }
-        button { background: #4CAF50; color: white; cursor: pointer; margin-top: 5px; font-size: 1rem; }
+        button { background: #4CAF50; color: white; cursor: pointer; font-size: 1rem; }
         button:hover { background: #45a049; }
         button:disabled { background: #555; cursor: not-allowed; }
         
         .edit-panel { background: #111; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; flex-direction: column; gap: 8px; }
         .edit-panel.active { display: flex; }
+
+        /* 下方超大文字框區塊 (可垂直拉伸) */
+        .json-section { 
+            flex: 1; /* 佔滿剩餘空間 */
+            display: flex; 
+            flex-direction: column; 
+            background: #1a1a1a; 
+            border-top: 2px solid #444; 
+            padding: 10px; 
+            min-height: 150px;
+            resize: vertical; /* 允許垂直拖拉 */
+            overflow: auto;
+        }
         
-        /* 文字框 */
-        textarea { width: 100%; flex: 1; min-height: 200px; background: #000; color: #0f0; font-family: monospace; font-size: 0.85rem; padding: 10px; border: 1px solid #333; border-radius: 5px; resize: none; margin-top: 5px;}
+        .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
+        .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
+        
+        textarea { 
+            width: 100%; flex: 1; background: #000; color: #0f0; font-family: monospace; font-size: 0.85rem; 
+            padding: 10px; border: 1px solid #333; border-radius: 5px; resize: none; outline: none; line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -51,29 +73,36 @@
     </div>
 
     <div class="sidebar">
-        <h2>🛠️ JSON 順序修改器</h2>
-        <div class="hint">
-            1. 載入資料<br>
-            2. 點擊國旗修改文字<br>
-            3. 檢查下方同步的 JSON<br>
-            4. 點擊下載或複製
+        <div class="controls">
+            <h2>🛠️ JSON 順序修改器</h2>
+            <div class="hint">
+                1. 載入資料<br>
+                2. 點擊國旗修改文字<br>
+                3. 檢查下方 JSON<br>
+                4. 下載或複製
+            </div>
+
+            <input type="file" id="jsonUpload" accept=".json">
+            <input type="file" id="folderUpload" webkitdirectory directory multiple>
+            
+            <select id="cardSelect" style="display:none;"></select>
+
+            <div class="edit-panel" id="editPanel">
+                <label style="color:#ffeb3b;">位置 <span id="posIndex">-</span> 的圖案是：</label>
+                <select id="wordSelect"></select>
+            </div>
+
+            <button id="exportBtn" disabled>💾 下載完美 JSON</button>
+            <button id="copyBtn" disabled style="background:#e09d32;">📋 複製 JSON 文字</button>
         </div>
 
-        <input type="file" id="jsonUpload" accept=".json">
-        <input type="file" id="folderUpload" webkitdirectory directory multiple>
-        
-        <select id="cardSelect" style="display:none;"></select>
-
-        <div class="edit-panel" id="editPanel">
-            <label style="color:#ffeb3b;">位置 <span id="posIndex">-</span> 的圖案是：</label>
-            <select id="wordSelect"></select>
+        <!-- 預覽文字框 -->
+        <div class="json-section">
+            <div class="json-header">
+                <span>📄 即時預覽結果</span>
+            </div>
+            <textarea id="previewJson" readonly placeholder="載入檔案後，修改文字會即時顯示在這裡..."></textarea>
         </div>
-
-        <button id="exportBtn" disabled>💾 下載完美 JSON</button>
-        <button id="copyBtn" disabled style="background:#e09d32;">📋 複製 JSON 文字</button>
-        
-        <!-- 即時預覽文字框 -->
-        <textarea id="previewJson" readonly placeholder="修改的同時，這裡的 JSON 會即時更新..."></textarea>
     </div>
 
     <script>
@@ -82,15 +111,20 @@
         let imageBaseUrl = "";
         let localImages = {};
 
+        // 【還原】你當初提供的精準熱區座標與你設定的完美半徑 (0.12 / 0.17)
         const perfectHotspots = [
-            { x: 0.190, y: 0.189 }, { x: 0.501, y: 0.190 }, { x: 0.808, y: 0.192 },
-            { x: 0.189, y: 0.500 }, { x: 0.498, y: 0.628 }, { x: 0.809, y: 0.500 },
-            { x: 0.187, y: 0.810 }, { x: 0.812, y: 0.811 }
+            { x: 0.190, y: 0.189, r: 0.12 }, 
+            { x: 0.501, y: 0.190, r: 0.12 }, 
+            { x: 0.808, y: 0.192, r: 0.12 },
+            { x: 0.189, y: 0.500, r: 0.12 }, 
+            { x: 0.498, y: 0.628, r: 0.17 }, // 中間大圖
+            { x: 0.809, y: 0.500, r: 0.12 },
+            { x: 0.187, y: 0.810, r: 0.12 }, 
+            { x: 0.812, y: 0.811, r: 0.12 }
         ];
 
         let currentCardIdx = 0;
 
-        // 產生最終預覽 JSON 的函式
         function generatePreview() {
             if (!rawData) return;
 
@@ -103,7 +137,7 @@
                         word: words[hIndex],
                         x: Number(spot.x.toFixed(3)),
                         y: Number(spot.y.toFixed(3)),
-                        r: hIndex === 4 ? 0.17 : 0.12
+                        r: spot.r // 【修復】直接套用上面設定的原始半徑，不再被亂改
                     }))
                 };
             });
@@ -112,7 +146,6 @@
             document.getElementById('previewJson').value = JSON.stringify(finalJson, null, 4);
         }
 
-        // 上傳 JSON
         document.getElementById('jsonUpload').addEventListener('change', (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
@@ -140,7 +173,6 @@
             reader.readAsText(file);
         });
 
-        // 上傳圖片資料夾
         document.getElementById('folderUpload').addEventListener('change', (e) => {
             localImages = {};
             const files = e.target.files;
@@ -159,11 +191,14 @@
 
             const container = document.getElementById('dotsContainer');
             container.innerHTML = '';
+            
+            // 這裡的預覽圈圈直接套用 perfectHotspots 的座標與半徑
             perfectHotspots.forEach((spot, i) => {
                 const div = document.createElement('div');
                 div.className = 'hotspot';
                 div.style.left = `${spot.x * 100}%`;
                 div.style.top = `${spot.y * 100}%`;
+                div.style.width = `${spot.r * 2 * 100}%`; // 套用正確的半徑
                 div.innerText = i;
                 div.addEventListener('pointerdown', (e) => {
                     e.stopPropagation();
@@ -173,7 +208,7 @@
             });
 
             document.getElementById('editPanel').classList.remove('active');
-            generatePreview(); // 更新預覽
+            generatePreview();
         }
 
         function openEditPanel(posIndex) {
@@ -194,20 +229,15 @@
                 wordSelect.appendChild(opt);
             });
 
-            // 選擇改變時，立刻修改資料並同步文字框
             wordSelect.onchange = (e) => {
                 const newWord = e.target.value;
                 const newIndex = wordBank.indexOf(newWord);
                 
-                // 1. 修改記憶體中的陣列
                 rawData.cardsData[currentCardIdx][posIndex] = newIndex;
-                
-                // 2. 立刻更新下方文字框
                 generatePreview(); 
             };
         }
 
-        // 下載檔案
         document.getElementById('exportBtn').addEventListener('click', () => {
             const jsonString = document.getElementById('previewJson').value;
             const blob = new Blob([jsonString], { type: "application/json" });
@@ -218,10 +248,8 @@
             document.body.appendChild(a);
             a.click();
             setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
-            alert("✅ 下載成功！");
         });
 
-        // 複製文字
         document.getElementById('copyBtn').addEventListener('click', () => {
             const ta = document.getElementById('previewJson');
             ta.select();
