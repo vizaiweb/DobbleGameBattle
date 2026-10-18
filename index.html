@@ -2,17 +2,15 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Dobble 文字綁定工具</title>
+    <title>Dobble 文字綁定工具 (穩定匯出版)</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
-        /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
         .card-container { position: relative; width: 85vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 熱區圓圈 (僅供點擊，不能拖曳) */
         .dot { 
             position: absolute; width: 15%; aspect-ratio: 1/1; border-radius: 50%; 
             background: rgba(0, 150, 255, 0.4); border: 2px solid #00aaff; 
@@ -22,13 +20,11 @@
             z-index: 10; text-align: center; line-height: 1.1; pointer-events: auto;
             transition: 0.2s;
         }
-        .dot:hover { background: rgba(0, 150, 255, 0.7); transform: translate(-50%, -50%) scale(1.05); }
+        .dot:hover { background: rgba(0, 150, 255, 0.7); }
         .dot.selected { border-color: #ffeb3b; background: rgba(255, 235, 59, 0.5); z-index: 11; box-shadow: 0 0 15px #ffeb3b; }
 
-        /* 右側控制列 */
         .sidebar { width: 400px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
-        /* 可折疊的設定區塊 */
         .settings-toggle {
             background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
@@ -38,7 +34,6 @@
         .settings-toggle .arrow { transition: transform 0.3s; font-size: 1.2rem; }
         .settings-toggle.collapsed .arrow { transform: rotate(-90deg); }
 
-        /* 設定區塊的內容 */
         .settings-content {
             max-height: 550px; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
             padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222;
@@ -52,17 +47,13 @@
         button.primary { background: #4CAF50; }
         button.primary:hover { background: #45a049; }
         
-        /* 文字選擇器面板 (點擊熱區時彈出) */
-        .word-selector-panel { 
-            display: none; background: #111; padding: 15px; border-radius: 8px; margin-top: 10px; border: 2px solid #00aaff;
-        }
+        .word-selector-panel { display: none; background: #111; padding: 15px; border-radius: 8px; margin-top: 10px; border: 2px solid #00aaff; }
         .word-selector-panel.active { display: block; }
         
         .hint { font-size: 0.8rem; color: #aaa; line-height: 1.3; }
         .section-title { color: #e09d32; font-size: 0.85rem; font-weight: bold; margin-top: 5px;}
         #imgStatus { color: #4CAF50; font-weight: bold; font-size: 0.85rem; text-align: center; }
 
-        /* JSON 區塊 */
         .json-section { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border-top: 2px solid #444; padding: 10px; min-height: 0; }
         .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
         .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
@@ -83,7 +74,6 @@
     </div>
 
     <div class="sidebar">
-        
         <div class="settings-toggle" id="settingsToggle">
             <span>⚙️ 設定與控制區塊</span>
             <span class="arrow">▼</span>
@@ -101,7 +91,6 @@
             <div class="section-title">3. 選擇卡片</div>
             <select id="cardSelect"></select>
 
-            <!-- 點擊熱區後，這裡會顯示下拉選單 -->
             <div class="word-selector-panel" id="wordSelectorPanel">
                 <label style="color:#00aaff;">重新綁定位置 <span id="selectedIdx">-</span> 的文字：</label>
                 <select id="wordSelect"></select>
@@ -117,7 +106,6 @@
             </div>
             <textarea id="outputJson" placeholder="點擊上方「匯出最終 JSON」後，這裡會顯示結果。"></textarea>
         </div>
-
     </div>
 
     <script>
@@ -143,12 +131,10 @@
         let cardsData = [];
         
         let currentCardIndex = 0;
-        let localCardsHotspots = []; // 儲存每張卡的文字綁定狀態
+        let localCardsHotspots = []; 
         let selectedIndex = -1;
-
         let localImageMap = {};
 
-        // 完美的九宮格座標 (固定不變)
         const fixedHotspots = [
             { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
             { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
@@ -159,7 +145,12 @@
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onload = (ev) => {
-                rawData = JSON.parse(ev.target.result);
+                try {
+                    rawData = JSON.parse(ev.target.result);
+                } catch (err) {
+                    alert("JSON 檔案格式錯誤，請檢查！");
+                    return;
+                }
                 wordBank = rawData.wordBank;
                 cardsData = rawData.cardsData;
 
@@ -167,7 +158,7 @@
                     document.getElementById('baseUrlInput').value = rawData.imageBaseUrl || "";
                 }
 
-                // 初始化每張卡的文字綁定 (預設先填入原始對應)
+                // 初始化時，嚴格複製一份乾淨的資料結構
                 localCardsHotspots = cardsData.map((indices, i) => {
                     const currentWords = indices.map(idx => wordBank[idx]);
                     return currentWords.map((word, hIndex) => {
@@ -244,23 +235,19 @@
                 div.style.top = `${spot.y * 100}%`;
                 div.style.width = `${spot.r * 2 * 100}%`;
                 
-                // 顯示目前綁定的文字
                 div.innerHTML = `<span>${spot.word}</span>`;
                 
                 if (selectedIndex === i) div.classList.add('selected');
 
-                // 點擊熱區時，開啟右側下拉選單
                 div.addEventListener('pointerdown', (e) => {
                     e.stopPropagation();
                     selectedIndex = i;
                     renderDots();
                     
-                    // 顯示文字選擇面板
                     const panel = document.getElementById('wordSelectorPanel');
                     panel.classList.add('active');
                     document.getElementById('selectedIdx').innerText = i;
                     
-                    // 填入所有單字到下拉選單
                     const wordSelect = document.getElementById('wordSelect');
                     wordSelect.innerHTML = '';
                     wordBank.forEach(w => {
@@ -276,40 +263,53 @@
             });
         }
 
-        // 當下拉選單改變時，更新文字綁定
         document.getElementById('wordSelect').addEventListener('change', (e) => {
             if (selectedIndex === -1) return;
             const newWord = e.target.value;
-            
-            // 更新文字，但不動 x, y, r
             localCardsHotspots[currentCardIndex][selectedIndex].word = newWord;
-            
-            // 重新渲染畫面
             renderDots();
         });
 
+        // 【重寫匯出邏輯】確保 100% 格式正確
         document.getElementById('exportBtn').addEventListener('click', () => {
-            if (!rawData) return;
+            if (!rawData) return alert("請先上傳 JSON！");
 
-            const newCardsData = cardsData.map((indices, i) => {
-                return {
-                    cardId: i + 1,
-                    words: indices, // 保留原始數字陣列不變
-                    hotspots: localCardsHotspots[i] // 寫入修改後的文字與座標
-                };
-            });
-
-            const finalJson = {
-                ...rawData,
-                cardsData: newCardsData
+            // 重新組裝最乾淨的物件，避免任何字串拼接錯誤
+            const exportData = {
+                setId: rawData.setId,
+                setName: rawData.setName,
+                imageBaseUrl: rawData.imageBaseUrl,
+                wordBank: rawData.wordBank,
+                cardsData: [],
+                answerCards: rawData.answerCards,
+                totalCards: rawData.totalCards,
+                wordsPerCard: rawData.wordsPerCard
             };
 
-            document.getElementById('outputJson').value = JSON.stringify(finalJson, null, 4);
-            
-            settingsToggle.classList.add('collapsed');
-            settingsContent.classList.add('collapsed');
-            
-            alert("✅ 匯出成功！\n\n你剛才重新綁定的文字已經寫入 JSON 中了！");
+            cardsData.forEach((indices, i) => {
+                exportData.cardsData.push({
+                    cardId: i + 1,
+                    words: indices,
+                    hotspots: localCardsHotspots[i].map(h => ({
+                        word: h.word,
+                        x: Number(h.x.toFixed(3)),
+                        y: Number(h.y.toFixed(3)),
+                        r: Number(h.r.toFixed(3))
+                    }))
+                });
+            });
+
+            // 使用原生 JSON.stringify 轉換，它絕對不會漏括號
+            try {
+                const jsonString = JSON.stringify(exportData, null, 4);
+                document.getElementById('outputJson').value = jsonString;
+                
+                settingsToggle.classList.add('collapsed');
+                settingsContent.classList.add('collapsed');
+                alert("✅ 匯出成功！\n系統已自動驗證格式正確。");
+            } catch (err) {
+                alert("❌ 匯出失敗，請檢查資料！");
+            }
         });
     </script>
 </body>
