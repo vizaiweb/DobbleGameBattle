@@ -7,10 +7,12 @@
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
+        /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
         .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
+        /* 熱區圈圈 */
         .hotspot { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             border: 2px dashed rgba(0, 150, 255, 0.6); background: rgba(0, 150, 255, 0.1);
@@ -20,8 +22,10 @@
         .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
         .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
 
+        /* 右側控制列 */
         .sidebar { width: 480px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
+        /* 可折疊的設定區塊 */
         .settings-toggle {
             background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
@@ -31,15 +35,13 @@
         .settings-toggle .arrow { transition: transform 0.3s; font-size: 1.2rem; }
         .settings-toggle.collapsed .arrow { transform: rotate(-90deg); }
 
+        /* 設定區塊的內容 */
         .settings-content {
             max-height: 550px; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
             padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222;
         }
         .settings-content.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; overflow: hidden; }
         
-        h2 { margin: 0; font-size: 1.1rem; color: #e09d32; }
-        .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; margin-bottom: 5px;}
-
         input[type="file"], select, button { padding: 10px; font-size: 0.95rem; border-radius: 5px; border: none; width: 100%; box-sizing: border-box; font-weight: bold; }
         input[type="file"] { background: #333; color: white; border: 1px solid #555; cursor: pointer; }
         select { background: #111; color: #fff; border: 1px solid #00aaff; cursor: pointer; }
@@ -54,6 +56,7 @@
         input[type="range"] { flex: 1; cursor: pointer; }
         .slider-val { color: #00aaff; font-weight: bold; min-width: 40px; text-align: right; }
 
+        /* JSON 文字框 */
         .json-section { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border-top: 2px solid #444; padding: 10px; min-height: 0; }
         .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
         .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
@@ -79,15 +82,10 @@
         </div>
 
         <div class="settings-content" id="settingsContent">
-            <h2>🛠️ JSON 修改器</h2>
-            <div class="hint">
-                1. 載入資料與圖片<br>
-                2. 點擊國旗修改文字與大小<br>
-                3. 下載完美格式的 JSON
-            </div>
-
+            <!-- 已經移除標題與 1,2,3 說明 -->
+            
             <input type="file" id="jsonUpload" accept=".json">
-            <input type="file" id="folderUpload" webkitdirectory directory multiple>
+            <!-- 已經移除圖片資料夾的 input -->
             
             <select id="cardSelect" style="display:none;"></select>
 
@@ -103,7 +101,7 @@
             </div>
 
             <button id="exportBtn" disabled>💾 下載 JSON</button>
-            <button id="copyBtn" disabled style="background:#e09d32;">📋 複製 JSON 文字</button>
+            <!-- 已經移除複製按鈕 -->
         </div>
 
         <div class="json-section">
@@ -118,6 +116,8 @@
         let rawData = null;
         let wordBank = [];
         let imageBaseUrl = "";
+        
+        // 因為移除了資料夾上傳，這裡保留空物件避免報錯
         let localImages = {};
 
         let perfectHotspots = [
@@ -135,16 +135,13 @@
             settingsContent.classList.toggle('collapsed');
         });
 
-        // 【核心】100% 保留你上傳的格式，只更新文字與大小
         function generatePreview() {
             if (!rawData) return;
             
             const finalCards = rawData.cardsData.map((card, i) => {
-                // 取得數字陣列與對應文字
                 const indices = Array.isArray(card) ? card : card.words;
                 const words = indices.map(idx => wordBank[idx]);
                 
-                // 生成最新的熱區資料
                 const newHotspots = perfectHotspots.map((spot, hIndex) => ({
                     word: words[hIndex],
                     x: Number(spot.x.toFixed(3)),
@@ -152,8 +149,6 @@
                     r: Number(spot.r.toFixed(3))
                 }));
 
-                // 如果原本是陣列格式，輸出時幫你包成物件（因為要有熱區）
-                // 如果原本是物件格式，則直接更新內容
                 if (Array.isArray(card)) {
                     return { cardId: i + 1, words: indices, hotspots: newHotspots };
                 } else {
@@ -185,27 +180,16 @@
                 select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
                 
                 document.getElementById('exportBtn').disabled = false;
-                document.getElementById('copyBtn').disabled = false;
                 loadCard(0);
             };
             reader.readAsText(file);
         });
 
-        document.getElementById('folderUpload').addEventListener('change', (e) => {
-            localImages = {};
-            const files = e.target.files;
-            for (let i = 0; i < files.length; i++) {
-                if (files[i].type.startsWith('image/')) {
-                    localImages[files[i].name] = URL.createObjectURL(files[i]);
-                }
-            }
-            loadCard(currentCardIdx);
-        });
-
         function loadCard(index) {
             currentCardIdx = index;
             const fileName = `${index + 1}.png`;
-            document.getElementById('cardImg').src = localImages[fileName] || (imageBaseUrl + fileName);
+            // 因為移除了資料夾上傳，這裡直接從 JSON 的 imageBaseUrl 抓取圖片
+            document.getElementById('cardImg').src = imageBaseUrl + fileName;
 
             const container = document.getElementById('dotsContainer');
             container.innerHTML = '';
@@ -251,7 +235,6 @@
                 const newWord = e.target.value;
                 const newIndex = wordBank.indexOf(newWord);
                 
-                // 更新記憶體中的數字
                 if (Array.isArray(rawData.cardsData[currentCardIdx])) {
                     rawData.cardsData[currentCardIdx][posIndex] = newIndex;
                 } else {
@@ -289,13 +272,6 @@
             document.body.appendChild(a);
             a.click();
             setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
-        });
-
-        document.getElementById('copyBtn').addEventListener('click', () => {
-            const ta = document.getElementById('previewJson');
-            ta.select();
-            document.execCommand('copy');
-            alert("✅ 已複製到剪貼簿！");
         });
     </script>
 </body>
