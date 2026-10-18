@@ -40,6 +40,7 @@
         
         .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; }
         .section-title { color: #e09d32; font-size: 0.9rem; margin-bottom: -5px; font-weight: bold;}
+        #imgStatus { color: #4CAF50; font-weight: bold; font-size: 0.9rem; text-align: center; }
     </style>
 </head>
 <body>
@@ -57,10 +58,11 @@
         <div class="section-title">1. 上傳 JSON</div>
         <input type="file" id="jsonUpload" accept=".json">
         
-        <div class="section-title">2. 設定圖片路徑 (二選一)</div>
-        <input type="text" id="baseUrlInput" placeholder="貼上 GitHub 圖片網址 (例如: https://.../images/Common_knowledge_NF/)">
-        <div class="hint" style="text-align:center; margin:-10px 0;">或</div>
+        <div class="section-title">2. 載入圖片 (二選一)</div>
         <input type="file" id="folderUpload" webkitdirectory directory multiple>
+        <div id="imgStatus">尚未載入圖片</div>
+        <div class="hint" style="text-align:center; margin:-10px 0;">或貼上 GitHub 網址</div>
+        <input type="text" id="baseUrlInput" placeholder="https://.../images/Common_knowledge_NF/">
         
         <div class="section-title">3. 選擇卡片開始標註</div>
         <select id="cardSelect"></select>
@@ -103,7 +105,6 @@
                 wordBank = rawData.wordBank;
                 cardsData = rawData.cardsData;
 
-                // 預設圖片路徑
                 if (!document.getElementById('baseUrlInput').value) {
                     document.getElementById('baseUrlInput').value = rawData.imageBaseUrl || "";
                 }
@@ -124,18 +125,24 @@
             reader.readAsText(file);
         });
 
-        // 2. 上傳本機資料夾 (最推薦，因為圖片就在本機)
+        // 2. 上傳本機資料夾 (修復讀取 Bug)
         document.getElementById('folderUpload').addEventListener('change', (e) => {
             const files = e.target.files;
+            localImageMap = {}; // 清空舊資料
+            
+            let count = 0;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                if (file.name.endsWith('.png')) {
+                // 只要是圖片檔就加入 (包含 png, jpg 等)
+                if (file.type.startsWith('image/')) {
                     const blobUrl = URL.createObjectURL(file);
                     localImageMap[file.name] = blobUrl;
+                    count++;
                 }
             }
+            
+            document.getElementById('imgStatus').innerText = `✅ 已成功載入 ${count} 張圖片`;
             loadCard(currentCardIndex); // 重新載入當前卡片
-            alert(`成功載入 ${Object.keys(localImageMap).length} 張本機圖片！`);
         });
 
         document.getElementById('cardSelect').addEventListener('change', (e) => {
