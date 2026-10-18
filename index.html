@@ -1,323 +1,228 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble - 2 Player Battle</title>
+    <title>Dobble 座標標註工具</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
-        .settings-btn { position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
-        .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
-
-        .settings-panel { position: absolute; top: 75px; right: 20px; z-index: 40; background: rgba(30,30,30,0.95); border: 2px solid #e09d32; border-radius: 15px; padding: 20px; display: none; flex-direction: column; gap: 15px; width: 280px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .settings-panel.active { display: flex; }
+        /* 左側畫布 */
+        .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; padding: 20px; }
+        .card-container { position: relative; width: 80vh; max-width: 90vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        .settings-panel label { color: #fff; font-weight: bold; font-size: 0.9rem; }
-        #themeSelect { padding: 10px; border-radius: 8px; border: none; font-weight: bold; background: #e09d32; color: white; outline: none; cursor: pointer; width: 100%; }
-        
-        .btn { background: #e09d32; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; color: white; cursor: pointer; box-shadow: 0 4px 0 #7b4a1a; transition: 0.1s; font-family: inherit; width: 100%; font-size: 1rem; text-align: center; }
-        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #7b4a1a; }
-
-        .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
-        .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
-        
-        .score-board { position: absolute; top: -35px; font-size: 1.2rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
-        
-        .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; background: #fff; cursor: pointer; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); margin-top: 30px; }
-        
-        .card-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center; }
-        .player-area.left .card-rotator { transform: rotate(90deg); }
-        .player-area.right .card-rotator { transform: rotate(-90deg); }
-        .card-rotator img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
-        
-        /* 除錯熱區顯示 (加入顯示單字的功能) */
-        .hotspot-visual { 
-            position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
-            background: rgba(255, 0, 0, 0.4); border: 2px solid red; 
-            transform: translate(-50%, -50%); pointer-events: none; 
-            display: none; z-index: 4; align-items: center; justify-content: center; flex-direction: column;
-            color: white; font-weight: bold; font-size: 1rem; text-align: center; 
-            text-shadow: 1px 1px 2px black; padding: 5px; word-break: break-word; line-height: 1.1;
+        /* 熱區圓圈 */
+        .dot { 
+            position: absolute; width: 15%; aspect-ratio: 1/1; border-radius: 50%; 
+            background: rgba(0, 150, 255, 0.4); border: 2px solid #00aaff; 
+            transform: translate(-50%, -50%); cursor: grab; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: white; font-weight: bold; font-size: 0.8rem; text-shadow: 1px 1px 2px black; 
+            z-index: 10; text-align: center; line-height: 1.1; pointer-events: auto;
         }
+        .dot.selected { border-color: #ffeb3b; background: rgba(255, 235, 59, 0.5); z-index: 11; box-shadow: 0 0 15px #ffeb3b; }
+        .dot.dragging { cursor: grabbing; background: rgba(0, 255, 0, 0.4); border-color: #00ff00; }
 
-        .hit-effect { position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -50%); }
-        .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
-        .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
-
-        .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
+        /* 右側控制列 */
+        .sidebar { width: 400px; background: #222; padding: 20px; display: flex; flex-direction: column; gap: 15px; border-left: 2px solid #444; overflow-y: auto; }
+        input[type="file"] { padding: 10px; background: #333; border-radius: 5px; border: 1px solid #555; }
+        select, button, input[type="range"] { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; width: 100%; cursor: pointer; font-weight: bold; }
+        button { background: #e09d32; color: white; }
+        button:hover { background: #d18d22; }
+        button.primary { background: #4CAF50; }
+        button.primary:hover { background: #45a049; }
+        
+        .slider-box { background: #111; padding: 15px; border-radius: 8px; display: none; }
+        input[type="range"] { padding: 0; margin-top: 10px; }
+        
+        textarea { width: 100%; height: 150px; background: #111; color: #0f0; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 5px; border: 1px solid #555; }
+        
+        .hint { font-size: 0.85rem; color: #aaa; line-height: 1.4; }
     </style>
 </head>
 <body>
 
-    <div class="settings-btn" id="settingsBtn">⚙️</div>
-
-    <div class="settings-panel" id="settingsPanel">
-        <div>
-            <label>Theme:</label>
-            <select id="themeSelect"></select>
-        </div>
-        <button class="btn" id="toggleHotspotBtn">👁️ Show Debug Info</button>
-        <button class="btn" id="resetBtn">🔄 Restart Game</button>
-    </div>
-
-    <div class="game-board">
-        <div class="player-area left" id="playerA">
-            <div class="score-board">Player A: <span id="scoreA">0</span></div>
-            <div class="card-container" id="cardContainerA">
-                <div class="card-rotator" id="rotatorA">
-                    <img id="imgA" src="" alt="Card A">
-                    <div id="hotspotsA"></div>
-                </div>
-                <div class="hit-effect" id="hitEffectA"></div>
-            </div>
-        </div>
-
-        <div class="player-area right" id="playerB">
-            <div class="score-board">Player B: <span id="scoreB">0</span></div>
-            <div class="card-container" id="cardContainerB">
-                <div class="card-rotator" id="rotatorB">
-                    <img id="imgB" src="" alt="Card B">
-                    <div id="hotspotsB"></div>
-                </div>
-                <div class="hit-effect" id="hitEffectB"></div>
-            </div>
+    <div class="workspace">
+        <div class="card-container" id="cardContainer">
+            <img id="cardImg" class="card-img" src="" alt="Card">
+            <div id="dotsContainer"></div>
         </div>
     </div>
 
-    <div class="center-message" id="centerMsg">Game Start!</div>
+    <div class="sidebar">
+        <h2 style="margin:0;">🛠️ 座標標註工具</h2>
+        <p class="hint">1. 上傳你的 JSON<br>2. 選擇卡片<br>3. 把藍圈拖到對應的國旗上<br>4. 點擊藍圈可用滑桿調大小<br>5. 全部標完後匯出</p>
+        
+        <input type="file" id="jsonUpload" accept=".json">
+        
+        <select id="cardSelect"></select>
+
+        <div class="slider-box" id="sliderBox">
+            <label style="color:#00aaff;">選取圓圈 (<span id="selectedIdx">-</span>) 半徑：<span id="rVal">0.15</span></label>
+            <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.15">
+        </div>
+
+        <button id="saveCardBtn">💾 儲存這張卡進度</button>
+        <button id="exportBtn" class="primary">📋 匯出最終 JSON</button>
+        
+        <textarea id="outputJson" readonly placeholder="點擊匯出後，這裡會顯示完整 JSON..."></textarea>
+    </div>
 
     <script>
-        let currentThemeId = null;
+        let rawData = null;
         let wordBank = [];
-        let currentCards = [];
         let imageBaseUrl = "";
-        let commonWord = "";
+        let cardsData = [];
         
-        let scoreA = 0, scoreB = 0;
-        let roundActive = false;
-        let cardA_Data = null, cardB_Data = null;
-        let currentIdxA = -1, currentIdxB = -1;
+        let currentCardIndex = 0;
+        let localCardsHotspots = []; // 儲存每張卡的熱區
+        
+        let selectedIndex = -1;
+        let draggedDot = null;
 
-        const themeSelect = document.getElementById('themeSelect');
-        const imgA = document.getElementById('imgA');
-        const imgB = document.getElementById('imgB');
-        const hitEffectA = document.getElementById('hitEffectA');
-        const hitEffectB = document.getElementById('hitEffectB');
-        const scoreAElem = document.getElementById('scoreA');
-        const scoreBElem = document.getElementById('scoreB');
-        const centerMsg = document.getElementById('centerMsg');
-        const toggleHotspotBtn = document.getElementById('toggleHotspotBtn');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const settingsPanel = document.getElementById('settingsPanel');
-
-        const rightAudio = new Audio('sounds/right.mp3');
-        const wrongAudio = new Audio('sounds/wrong.mp3');
-
-        // 【核心修正】保留你提供的精準座標，但陣列順序改為「左上、中上、右上、左中、正中、右中、左下、右下」以完美對齊 JSON
-        const virtualHotspots = [
-            { x: 0.190, y: 0.189, r: 0.12 }, // 0: 左上
-            { x: 0.501, y: 0.190, r: 0.12 }, // 1: 中上
-            { x: 0.808, y: 0.192, r: 0.12 }, // 2: 右上
-            { x: 0.189, y: 0.500, r: 0.12 }, // 3: 左中
-            { x: 0.498, y: 0.628, r: 0.17 }, // 4: 正中 (調回你之前的位置)
-            { x: 0.809, y: 0.500, r: 0.12 }, // 5: 右中
-            { x: 0.187, y: 0.810, r: 0.12 }, // 6: 左下
-            { x: 0.812, y: 0.811, r: 0.12 }  // 7: 右下
+        // 預設的中心點，第一次載入時使用
+        const defaultHotspots = [
+            { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
+            { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
+            { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
         ];
 
-        settingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('active'));
-        document.addEventListener('pointerdown', (e) => {
-            if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) settingsPanel.classList.remove('active');
-        });
+        document.getElementById('jsonUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                rawData = JSON.parse(ev.target.result);
+                wordBank = rawData.wordBank;
+                imageBaseUrl = rawData.imageBaseUrl;
+                cardsData = rawData.cardsData;
 
-        async function init() {
-            try {
-                const res = await fetch('sets/index.json');
-                const data = await res.json();
-                themeSelect.innerHTML = '';
-                data.availableSets.forEach(set => {
-                    const opt = document.createElement('option');
-                    opt.value = set.id;
-                    opt.textContent = set.name;
-                    themeSelect.appendChild(opt);
+                // 初始化 57 張卡的熱區資料
+                localCardsHotspots = cardsData.map(() => {
+                    return defaultHotspots.map(h => ({...h})); 
                 });
-                themeSelect.addEventListener('change', () => loadTheme(themeSelect.value));
-                await loadTheme(themeSelect.value);
-            } catch (e) { console.error("Failed to load index.json", e); }
-        }
 
-        async function loadTheme(themeId) {
-            currentThemeId = themeId;
-            try {
-                const res = await fetch(`sets/${themeId}.json`);
-                const data = await res.json();
-                wordBank = data.wordBank;
-                imageBaseUrl = data.imageBaseUrl;
-                currentCards = data.cardsData.map(indices => indices.map(idx => wordBank[idx]));
-                resetGame();
-            } catch (e) { console.error(`Failed to load theme ${themeId}`, e); }
-        }
+                // 建立下拉選單
+                const select = document.getElementById('cardSelect');
+                select.innerHTML = '';
+                cardsData.forEach((_, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = `卡片 ${i + 1}`;
+                    select.appendChild(opt);
+                });
 
-        function resetGame() {
-            scoreA = 0; scoreB = 0;
-            scoreAElem.innerText = scoreA;
-            scoreBElem.innerText = scoreB;
-            centerMsg.style.display = 'none';
-            hitEffectA.className = 'hit-effect';
-            hitEffectB.className = 'hit-effect';
-            nextRound();
-        }
-
-        function findCommonWord(cardA, cardB) {
-            const setA = new Set(cardA);
-            for (let word of cardB) {
-                if (setA.has(word)) return word;
-            }
-            return null;
-        }
-
-        function drawHotspots() {
-            const containerA = document.getElementById('hotspotsA');
-            const containerB = document.getElementById('hotspotsB');
-            containerA.innerHTML = ''; containerB.innerHTML = '';
-
-            virtualHotspots.forEach((spot, index) => {
-                // A 的熱區
-                const divA = document.createElement('div');
-                divA.className = 'hotspot-visual';
-                divA.style.left = `${spot.x * 100}%`;
-                divA.style.top = `${spot.y * 100}%`;
-                divA.style.width = `${spot.r * 2 * 100}%`;
-                // 顯示編號與對應單字
-                divA.innerHTML = `<span>${index}</span><span style="font-size:0.7rem; color:yellow;">${cardA_Data ? cardA_Data[index] : ''}</span>`;
-                divA.style.display = showHotspots ? 'flex' : 'none';
-                containerA.appendChild(divA);
-
-                // B 的熱區
-                const divB = document.createElement('div');
-                divB.className = 'hotspot-visual';
-                divB.style.left = `${spot.x * 100}%`;
-                divB.style.top = `${spot.y * 100}%`;
-                divB.style.width = `${spot.r * 2 * 100}%`;
-                // 顯示編號與對應單字
-                divB.innerHTML = `<span>${index}</span><span style="font-size:0.7rem; color:yellow;">${cardB_Data ? cardB_Data[index] : ''}</span>`;
-                divB.style.display = showHotspots ? 'flex' : 'none';
-                containerB.appendChild(divB);
-            });
-        }
-
-        let showHotspots = false;
-        toggleHotspotBtn.addEventListener('click', () => {
-            showHotspots = !showHotspots;
-            document.querySelectorAll('.hotspot-visual').forEach(el => {
-                el.style.display = showHotspots ? 'flex' : 'none';
-            });
-            toggleHotspotBtn.innerText = showHotspots ? '👁️ Hide Debug Info' : '👁️ Show Debug Info';
+                loadCard(0);
+            };
+            reader.readAsText(file);
         });
 
-        function nextRound() {
-            if (currentCards.length < 2) return;
-            let idxA, idxB;
-            do {
-                idxA = Math.floor(Math.random() * currentCards.length);
-                idxB = Math.floor(Math.random() * currentCards.length);
-                while (idxA === idxB) idxB = Math.floor(Math.random() * currentCards.length);
-                commonWord = findCommonWord(currentCards[idxA], currentCards[idxB]);
-            } while (!commonWord);
+        document.getElementById('cardSelect').addEventListener('change', (e) => {
+            loadCard(parseInt(e.target.value));
+        });
 
-            currentIdxA = idxA;
-            currentIdxB = idxB;
-            cardA_Data = currentCards[idxA];
-            cardB_Data = currentCards[idxB];
-
-            imgA.src = `${imageBaseUrl}${idxA + 1}.png`;
-            imgB.src = `${imageBaseUrl}${idxB + 1}.png`;
-
-            roundActive = true;
-            hitEffectA.className = 'hit-effect';
-            hitEffectB.className = 'hit-effect';
-            
-            drawHotspots();
+        function loadCard(index) {
+            currentCardIndex = index;
+            document.getElementById('cardImg').src = `${imageBaseUrl}${index + 1}.png`;
+            document.getElementById('cardSelect').value = index;
+            selectedIndex = -1;
+            document.getElementById('sliderBox').style.display = 'none';
+            renderDots();
         }
 
-        function handlePlayerClick(event, player) {
-            if (!roundActive) return;
-
-            const isPlayerA = (player === 'A');
-            const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
-            const effect = isPlayerA ? hitEffectA : hitEffectB;
-            const cardData = isPlayerA ? cardA_Data : cardB_Data;
+        function renderDots() {
+            const container = document.getElementById('dotsContainer');
+            container.innerHTML = '';
             
-            const rect = container.getBoundingClientRect();
+            // 取得這張卡的單字
+            const currentWords = cardsData[currentCardIndex].map(idx => wordBank[idx]);
+            const hotspots = localCardsHotspots[currentCardIndex];
+
+            hotspots.forEach((spot, i) => {
+                const div = document.createElement('div');
+                div.className = 'dot';
+                div.style.left = `${spot.x * 100}%`;
+                div.style.top = `${spot.y * 100}%`;
+                div.style.width = `${spot.r * 2 * 100}%`;
+                
+                // 顯示對應的單字
+                div.innerHTML = `<span>${currentWords[i]}</span>`;
+                
+                if (selectedIndex === i) div.classList.add('selected');
+
+                div.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    selectedIndex = i;
+                    draggedDot = { index: i };
+                    div.classList.add('dragging');
+                    div.setPointerCapture(e.pointerId);
+                    
+                    document.getElementById('sliderBox').style.display = 'block';
+                    document.getElementById('selectedIdx').innerText = currentWords[i];
+                    document.getElementById('radiusSlider').value = spot.r;
+                    document.getElementById('rVal').innerText = spot.r.toFixed(2);
+                    
+                    renderDots();
+                });
+
+                div.addEventListener('pointermove', (e) => {
+                    if (!draggedDot || draggedDot.index !== i) return;
+                    const rect = document.getElementById('cardContainer').getBoundingClientRect();
+                    
+                    let x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    let y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+                    localCardsHotspots[currentCardIndex][i].x = x;
+                    localCardsHotspots[currentCardIndex][i].y = y;
+                    
+                    div.style.left = `${x * 100}%`;
+                    div.style.top = `${y * 100}%`;
+                });
+
+                div.addEventListener('pointerup', () => {
+                    if (draggedDot) {
+                        div.classList.remove('dragging');
+                        draggedDot = null;
+                    }
+                });
+
+                container.appendChild(div);
+            });
+        }
+
+        document.getElementById('radiusSlider').addEventListener('input', (e) => {
+            if (selectedIndex === -1) return;
+            const val = parseFloat(e.target.value);
+            localCardsHotspots[currentCardIndex][selectedIndex].r = val;
+            document.getElementById('rVal').innerText = val.toFixed(2);
             
-            let displayX = (event.clientX - rect.left) / rect.width;
-            let displayY = (event.clientY - rect.top) / rect.height;
+            const dot = document.querySelector(`.dot.selected`);
+            if (dot) dot.style.width = `${val * 2 * 100}%`;
+        });
 
-            effect.style.left = `${displayX * 100}%`;
-            effect.style.top = `${displayY * 100}%`;
+        document.getElementById('saveCardBtn').addEventListener('click', () => {
+            alert(`卡片 ${currentCardIndex + 1} 的座標已記錄！請切換下一張。`);
+        });
 
-            let clickX, clickY;
-            if (isPlayerA) {
-                clickX = displayY;
-                clickY = 1 - displayX;
-            } else {
-                clickX = 1 - displayY;
-                clickY = displayX;
-            }
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            if (!rawData) return;
 
-            let hitIndex = -1;
-            let minDistance = Infinity;
-
-            virtualHotspots.forEach((spot, index) => {
-                const dx = clickX - spot.x;
-                const dy = clickY - spot.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist <= spot.r && dist < minDistance) {
-                    minDistance = dist;
-                    hitIndex = index;
-                }
+            // 將原本的卡片陣列與新的熱區資料合併
+            const newCardsData = cardsData.map((indices, i) => {
+                return {
+                    words: indices,
+                    hotspots: localCardsHotspots[i]
+                };
             });
 
-            if (hitIndex === -1) return; 
+            const finalJson = {
+                ...rawData,
+                cardsData: newCardsData
+            };
 
-            const hitWord = cardData[hitIndex];
-            effect.style.width = `${virtualHotspots[hitIndex].r * 2 * 100}%`; 
-
-            // 在 Console 印出詳細判定資訊
-            console.log(`[判定] 點擊熱區 ${hitIndex} | 程式判定單字: "${hitWord}" | 本局共同單字: "${commonWord}"`);
-
-            if (hitWord === commonWord) {
-                effect.className = 'hit-effect correct';
-                roundActive = false;
-                rightAudio.play().catch(()=>{});
-                
-                if (isPlayerA) {
-                    scoreA++; scoreAElem.innerText = scoreA;
-                    showCenterMessage("🎉 Player A Scores!");
-                } else {
-                    scoreB++; scoreBElem.innerText = scoreB;
-                    showCenterMessage("🎉 Player B Scores!");
-                }
-                setTimeout(() => { centerMsg.style.display = 'none'; nextRound(); }, 2000);
-            } else {
-                effect.className = 'hit-effect wrong';
-                wrongAudio.play().catch(()=>{});
-                setTimeout(() => { effect.className = 'hit-effect'; }, 500);
-            }
-        }
-
-        function showCenterMessage(text) {
-            centerMsg.innerText = text;
-            centerMsg.style.display = 'block';
-        }
-
-        document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'A'));
-        document.getElementById('cardContainerB').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'B'));
-        document.getElementById('resetBtn').addEventListener('click', resetGame);
-
-        init();
+            document.getElementById('outputJson').value = JSON.stringify(finalJson, null, 4);
+            alert("✅ 匯出成功！請複製下方文字框的內容，覆蓋你的 JSON 檔案。");
+        });
     </script>
 </body>
 </html>
