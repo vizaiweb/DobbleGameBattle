@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Dobble JSON 編輯器</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
+        
+        .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        
+        .back-btn { position: absolute; top: 20px; left: 20px; background: #e09d32; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; }
+        .back-btn:hover { background: #d18d22; }
+
+        .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
+        .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+        
+        .hotspot { 
+            position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
+            border: 2px dashed rgba(0, 150, 255, 0.6); background: rgba(0, 150, 255, 0.1);
+            transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: transparent; transition: 0.2s; cursor: pointer;
+        }
+        .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
+        .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
+
+        .sidebar { width: 480px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
+        
+        .settings-toggle {
+            background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #444; user-select: none; transition: 0.2s;
+        }
+        .settings-toggle:hover { background: #444; }
+        .settings-toggle .arrow { transition: transform 0.3s; font-size: 1.2rem; }
+        .settings-toggle.collapsed .arrow { transform: rotate(-90deg); }
+
+        .settings-content {
+            max-height: 550px; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
+            padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222;
+        }
+        .settings-content.collapsed { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; overflow: hidden; }
+        
+        input[type="file"], select, button { padding: 10px; font-size: 0.95rem; border-radius: 5px; border: none; width: 100%; box-sizing: border-box; font-weight: bold; }
+        input[type="file"] { background: #333; color: white; border: 1px solid #555; cursor: pointer; }
+        select { background: #111; color: #fff; border: 1px solid #00aaff; cursor: pointer; }
+        button { background: #4CAF50; color: white; cursor: pointer; transition: 0.1s; }
+        button:hover { background: #45a049; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        
+        .edit-panel { background: #111; padding: 12px; border-radius: 8px; border: 1px solid #333; display: none; flex-direction: column; gap: 8px; }
+        .edit-panel.active { display: flex; }
+
+        .slider-box { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        input[type="range"] { flex: 1; cursor: pointer; }
+        .slider-val { color: #00aaff; font-weight: bold; min-width: 40px; text-align: right; }
+
+        .json-section { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; border-top: 2px solid #444; padding: 10px; min-height: 0; }
+        .json-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
+        .json-header span { font-size: 0.9rem; color: #4CAF50; font-weight: bold; }
+        textarea { 
+            width: 100%; flex: 1; background: #000; color: #0f0; font-family: monospace; font-size: 0.85rem; 
+            padding: 10px; border: 1px solid #333; border-radius: 5px; resize: none; outline: none; line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="workspace">
+        <a href="index.html" class="back-btn">🎮 回到遊戲</a>
+        <div class="card-container" id="cardContainer">
+            <img id="cardImg" class="card-img" src="" alt="Card">
+            <div id="dotsContainer"></div>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div class="settings-toggle" id="settingsToggle">
+            <span>⚙️ 設定與控制區塊</span>
+            <span class="arrow">▼</span>
+        </div>
+
+        <div class="settings-content" id="settingsContent">
+            <input type="file" id="jsonUpload" accept=".json">
+            <select id="cardSelect" style="display:none;"></select>
+            <div class="edit-panel" id="editPanel">
+                <label style="color:#ffeb3b;">位置 <span id="posIndex">-</span> 的圖案是：</label>
+                <select id="wordSelect"></select>
+                <label style="color:#00aaff; margin-top: 10px;">熱區半徑 (r)：</label>
+                <div class="slider-box">
+                    <input type="range" id="radiusSlider" min="0.05" max="0.30" step="0.01" value="0.12">
+                    <span class="slider-val" id="radiusVal">0.12</span>
+                </div>
+            </div>
+            <button id="exportBtn" disabled>💾 下載 JSON</button>
+        </div>
+
+        <div class="json-section">
+            <div class="json-header">
+                <span>📄 即時同步 JSON</span>
+            </div>
+            <textarea id="previewJson" readonly placeholder="載入檔案後，修改文字會即時顯示在這裡..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        let rawData = null;
+        let wordBank = [];
+        let imageBaseUrl = "";
+        let perfectHotspots = [
+            { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
+            { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
+            { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
+        ];
+        let currentCardIdx = 0;
+
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsContent = document.getElementById('settingsContent');
+        settingsToggle.addEventListener('click', () => {
+            settingsToggle.classList.toggle('collapsed');
+            settingsContent.classList.toggle('collapsed');
+        });
+
+        function generatePreview() {
+            if (!rawData) return;
+            const finalCards = rawData.cardsData.map((card, i) => {
+                const indices = Array.isArray(card) ? card : card.words;
+                const words = indices.map(idx => wordBank[idx]);
+                const newHotspots = perfectHotspots.map((spot, hIndex) => ({
+                    word: words[hIndex],
+                    x: Number(spot.x.toFixed(3)),
+                    y: Number(spot.y.toFixed(3)),
+                    r: Number(spot.r.toFixed(3))
+                }));
+                if (Array.isArray(card)) {
+                    return { cardId: i + 1, words: indices, hotspots: newHotspots };
+                } else {
+                    return { ...card, words: indices, hotspots: newHotspots };
+                }
+            });
+            const finalJson = { ...rawData, cardsData: finalCards };
+            document.getElementById('previewJson').value = JSON.stringify(finalJson, null, 4);
+        }
+
+        document.getElementById('jsonUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                rawData = JSON.parse(ev.target.result);
+                wordBank = rawData.wordBank;
+                imageBaseUrl = rawData.imageBaseUrl;
+                const select = document.getElementById('cardSelect');
+                select.innerHTML = '';
+                rawData.cardsData.forEach((_, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = `卡片 ${i + 1}`;
+                    select.appendChild(opt);
+                });
+                select.style.display = 'block';
+                select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
+                document.getElementById('exportBtn').disabled = false;
+                loadCard(0);
+            };
+            reader.readAsText(file);
+        });
+
+        function loadCard(index) {
+            currentCardIdx = index;
+            const fileName = `${index + 1}.png`;
+            document.getElementById('cardImg').src = imageBaseUrl + fileName;
+            const container = document.getElementById('dotsContainer');
+            container.innerHTML = '';
+            perfectHotspots.forEach((spot, i) => {
+                const div = document.createElement('div');
+                div.className = 'hotspot';
+                div.style.left = `${spot.x * 100}%`;
+                div.style.top = `${spot.y * 100}%`;
+                div.style.width = `${spot.r * 2 * 100}%`; 
+                div.innerText = i;
+                div.addEventListener('pointerdown', (e) => {
+                    e.stopPropagation();
+                    openEditPanel(i);
+                });
+                container.appendChild(div);
+            });
+            document.getElementById('editPanel').classList.remove('active');
+            generatePreview(); 
+        }
+
+        function openEditPanel(posIndex) {
+            document.querySelectorAll('.hotspot').forEach((el, i) => el.classList.toggle('active', i === posIndex));
+            document.getElementById('editPanel').classList.add('active');
+            document.getElementById('posIndex').innerText = posIndex;
+            const wordSelect = document.getElementById('wordSelect');
+            const currentCard = rawData.cardsData[currentCardIdx];
+            const indices = Array.isArray(currentCard) ? currentCard : currentCard.words;
+            const currentIdxInCard = indices[posIndex];
+            const currentWord = wordBank[currentIdxInCard];
+            wordSelect.innerHTML = '';
+            wordBank.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w;
+                opt.textContent = w;
+                if (w === currentWord) opt.selected = true;
+                wordSelect.appendChild(opt);
+            });
+            wordSelect.onchange = (e) => {
+                const newWord = e.target.value;
+                const newIndex = wordBank.indexOf(newWord);
+                if (Array.isArray(rawData.cardsData[currentCardIdx])) {
+                    rawData.cardsData[currentCardIdx][posIndex] = newIndex;
+                } else {
+                    rawData.cardsData[currentCardIdx].words[posIndex] = newIndex;
+                }
+                generatePreview(); 
+            };
+            const radiusSlider = document.getElementById('radiusSlider');
+            const radiusVal = document.getElementById('radiusVal');
+            radiusSlider.value = perfectHotspots[posIndex].r;
+            radiusVal.innerText = perfectHotspots[posIndex].r.toFixed(2);
+            radiusSlider.oninput = (e) => {
+                const newR = parseFloat(e.target.value);
+                perfectHotspots[posIndex].r = newR;
+                radiusVal.innerText = newR.toFixed(2);
+                const activeDot = document.querySelector(`.hotspot.active`);
+                if (activeDot) activeDot.style.width = `${newR * 2 * 100}%`;
+                generatePreview();
+            };
+        }
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const jsonString = document.getElementById('previewJson').value;
+            if(!jsonString) return;
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${rawData.setId || 'Dobble'}.json`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
+        });
+    </script>
+</body>
+</html>
