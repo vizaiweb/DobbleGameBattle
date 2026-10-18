@@ -2,13 +2,18 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Dobble JSON 修改器</title>
+    <title>Dobble JSON 編輯器</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
         /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
+        
+        /* 回到遊戲按鈕 */
+        .back-btn { position: absolute; top: 20px; left: 20px; background: #e09d32; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; }
+        .back-btn:hover { background: #d18d22; }
+
         .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
@@ -25,7 +30,6 @@
         /* 右側控制列 */
         .sidebar { width: 480px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
-        /* 可折疊的設定區塊 */
         .settings-toggle {
             background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
@@ -35,7 +39,6 @@
         .settings-toggle .arrow { transition: transform 0.3s; font-size: 1.2rem; }
         .settings-toggle.collapsed .arrow { transform: rotate(-90deg); }
 
-        /* 設定區塊的內容 */
         .settings-content {
             max-height: 550px; overflow-y: auto; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s;
             padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #222;
@@ -69,6 +72,9 @@
 <body>
 
     <div class="workspace">
+        <!-- 回到遊戲按鈕 -->
+        <a href="index.html" class="back-btn">🎮 回到遊戲</a>
+
         <div class="card-container" id="cardContainer">
             <img id="cardImg" class="card-img" src="" alt="Card">
             <div id="dotsContainer"></div>
@@ -82,10 +88,8 @@
         </div>
 
         <div class="settings-content" id="settingsContent">
-            <!-- 已經移除標題與 1,2,3 說明 -->
             
             <input type="file" id="jsonUpload" accept=".json">
-            <!-- 已經移除圖片資料夾的 input -->
             
             <select id="cardSelect" style="display:none;"></select>
 
@@ -101,7 +105,6 @@
             </div>
 
             <button id="exportBtn" disabled>💾 下載 JSON</button>
-            <!-- 已經移除複製按鈕 -->
         </div>
 
         <div class="json-section">
@@ -117,9 +120,7 @@
         let wordBank = [];
         let imageBaseUrl = "";
         
-        // 因為移除了資料夾上傳，這裡保留空物件避免報錯
-        let localImages = {};
-
+        // 因為你拿掉了資料夾上傳，這裡直接吃 JSON 裡的路徑
         let perfectHotspots = [
             { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
             { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
@@ -188,7 +189,8 @@
         function loadCard(index) {
             currentCardIdx = index;
             const fileName = `${index + 1}.png`;
-            // 因為移除了資料夾上傳，這裡直接從 JSON 的 imageBaseUrl 抓取圖片
+            
+            // 直接使用 JSON 裡的路徑
             document.getElementById('cardImg').src = imageBaseUrl + fileName;
 
             const container = document.getElementById('dotsContainer');
