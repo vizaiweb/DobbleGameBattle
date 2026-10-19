@@ -98,33 +98,63 @@
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
 
-        const rightAudio = new Audio('sounds/right.mp3');
-        const wrongAudio = new Audio('sounds/wrong.mp3');
+        // 🔊 使用 Web Audio API (參考你提供的版本)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
 
-        // 🎙️ 取得語音包
-        let voices = [];
+        // 🎙️ 預先載入語音包
+        let availableVoices = [];
         function loadVoices() {
-            if ('speechSynthesis' in window) {
-                voices = window.speechSynthesis.getVoices();
-            }
+            if (!('speechSynthesis' in window)) return;
+            availableVoices = window.speechSynthesis.getVoices();
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
             loadVoices();
         }
 
+        // 🔓 解鎖機制 (必須在使用者手勢中觸發)
+        function unlockMedia() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance(' ');
+                u.volume = 0;
+                window.speechSynthesis.speak(u);
+            }
+
+            document.body.removeEventListener('pointerdown', unlockMedia);
+        }
+        document.body.addEventListener('pointerdown', unlockMedia);
+
         // 🎙️ 核心發音函式
         function speakWord(word) {
             if (!('speechSynthesis' in window)) return;
             
             window.speechSynthesis.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(word);
             utterance.lang = 'en-US';
             utterance.rate = 0.85;
             utterance.pitch = 1.0;
+            utterance.volume = 1.0;
             
-            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
-            if (preferredVoice) utterance.voice = preferredVoice;
+            let selectedVoice = availableVoices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            const preferredVoice = availableVoices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
+            if (preferredVoice) selectedVoice = preferredVoice;
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
             
             window.speechSynthesis.speak(utterance);
         }
@@ -255,10 +285,25 @@
             if (hitHotspot.word === commonWord) {
                 effect.className = 'hit-effect correct';
                 roundActive = false;
-                rightAudio.play().catch(()=>{});
                 
+                // 🎙️ 立即觸發發音
+                speakWord(commonWord);
+                
+                // 🔊 播放答對音效 (參考你提供的版本)
+                if(audioCtx) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.value = 800; 
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                }
+                
+                // 🎯 彈出文字框
                 let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
-                
                 centerMsg.innerHTML = `
                     ${winnerText}
                     <div class="word-display" onclick="speakWord('${commonWord}')">${commonWord}</div>
@@ -278,8 +323,20 @@
                 }, 3000);
             } else {
                 effect.className = 'hit-effect wrong';
-                // 🔊 播放錯誤音效
-                wrongAudio.play().catch(()=>{});
+                
+                // 🔊 播放答錯音效 (參考你提供的版本)
+                if(audioCtx) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.value = 200;
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                }
+                
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
             }
         }
