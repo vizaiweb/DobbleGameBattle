@@ -8,7 +8,6 @@
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 🚀 開局解鎖按鈕 (覆蓋全螢幕) */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 10000;
@@ -25,7 +24,15 @@
         #start-overlay h1 { font-size: 2.5rem; margin-bottom: 10px; color: #e09d32; }
         #start-overlay p { color: #aaa; font-size: 1.1rem; margin-bottom: 40px;}
 
-        .settings-btn { position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; text-decoration: none;}
+        /* 🚫 隱藏齒輪按鈕 (保留程式碼以備不時之需) */
+        .settings-btn { 
+            display: none; 
+            position: absolute; top: 15px; right: 20px; z-index: 40; 
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); 
+            color: white; font-size: 1.8rem; width: 50px; height: 50px; 
+            border-radius: 50%; align-items: center; justify-content: center; 
+            cursor: pointer; transition: 0.3s; text-decoration: none;
+        }
         .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
 
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
@@ -76,6 +83,7 @@
         <p style="color:#aaa;">This game requires landscape mode.</p>
     </div>
 
+    <!-- 齒輪按鈕隱藏，但保留程式碼 -->
     <a href="jsonEditor.html" class="settings-btn" title="Edit JSON">⚙️</a>
 
     <div class="game-board">
