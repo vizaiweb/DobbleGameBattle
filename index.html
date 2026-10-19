@@ -85,56 +85,57 @@
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
 
-        // 使用 Web Audio API 來確保音效在手機上正常播放
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx;
+        const rightAudio = new Audio('sounds/right.mp3');
+        const wrongAudio = new Audio('sounds/wrong.mp3');
 
-        function playSound(url) {
-            if (!audioCtx) return;
-            // 因為我們已經解鎖了 audioCtx，這裡直接播放
-            const audio = new Audio(url);
-            audio.play().catch(e => console.log("Audio play blocked", e));
-        }
-
-        // 🎙️ 預先載入語音包
-        let availableVoices = [];
+        // 🎙️ 取得語音包
+        let voices = [];
         function loadVoices() {
-            if (!('speechSynthesis' in window)) return;
-            availableVoices = window.speechSynthesis.getVoices();
+            if ('speechSynthesis' in window) {
+                voices = window.speechSynthesis.getVoices();
+            }
         }
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
             loadVoices();
         }
 
-        // 🔓 解鎖機制 (必須在使用者手勢中觸發)
-        function unlockMedia() {
-            // 1. 解鎖 Web Audio API
-            if (!audioCtx) {
-                audioCtx = new AudioContext();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+        // 🔓 解鎖音效 (必須由使用者手勢觸發)
+        let audioUnlocked = false;
+        function unlockAudio() {
+            if (audioUnlocked) return;
             
-            // 2. 解鎖語音引擎 (在手機上，必須先唸一個空字串)
+            // 1. 解鎖 mp3 音效
+            rightAudio.play().then(() => {
+                rightAudio.pause();
+                rightAudio.currentTime = 0;
+            }).catch(()=>{});
+            wrongAudio.play().then(() => {
+                wrongAudio.pause();
+                wrongAudio.currentTime = 0;
+            }).catch(()=>{});
+            
+            // 2. 解鎖語音引擎 (非常重要：在手機上必須先成功執行一次)
             if ('speechSynthesis' in window) {
                 const u = new SpeechSynthesisUtterance(' ');
                 u.volume = 0;
                 window.speechSynthesis.speak(u);
             }
-
-            // 移除監聽，避免一直觸發
-            document.body.removeEventListener('pointerdown', unlockMedia);
+            
+            audioUnlocked = true;
+            document.body.removeEventListener('pointerdown', unlockAudio);
         }
-        document.body.addEventListener('pointerdown', unlockMedia);
+        document.body.addEventListener('pointerdown', unlockAudio);
 
-        // 🎙️ 核心發音函式
+        // 🎙️ 發音核心
         function speakWord(word) {
             if (!('speechSynthesis' in window)) return;
             
-            // 確保先停止之前的語音
+            // 手機端必須確保沒有被暫停
             window.speechSynthesis.cancel();
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            }
             
             const utterance = new SpeechSynthesisUtterance(word);
             utterance.lang = 'en-US';
@@ -142,21 +143,20 @@
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
-            // 挑選語音
-            let selectedVoice = availableVoices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
-            const preferredVoice = availableVoices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
-            if (preferredVoice) selectedVoice = preferredVoice;
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
+            // 優先選擇英文語音
+            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
+            const fallbackVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            } else if (fallbackVoice) {
+                utterance.voice = fallbackVoice;
             }
             
-            // 手機上必須確保語音引擎沒有被暫停
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-            }
-            
-            window.speechSynthesis.speak(utterance);
+            // 延遲一點點播放，避免被其他音效卡住
+            setTimeout(() => {
+                window.speechSynthesis.speak(utterance);
+            }, 50);
         }
 
         async function init() {
@@ -241,6 +241,9 @@
         }
 
         function handlePlayerClick(event, player) {
+            // 每次點擊都先解鎖一次，確保萬無一失
+            if (!audioUnlocked) unlockAudio();
+            
             if (!roundActive) return;
 
             const isPlayerA = (player === 'A');
@@ -285,22 +288,16 @@
             if (hitHotspot.word === commonWord) {
                 effect.className = 'hit-effect correct';
                 roundActive = false;
+                rightAudio.play().catch(()=>{});
                 
-                // 🎙️ 立即觸發發音 (在點擊事件的同步階段觸發，手機才不會擋)
-                speakWord(commonWord);
-                
-                // 播放音效 (改用 Web Audio API 確保不卡頓)
-                if(audioCtx) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.value = 800; // 簡單的逼逼聲代替 right.mp3
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.1);
-                }
+                // 🎙️ 手機端終極解法：把發音放到下一個事件循環的開頭
+                // 這樣可以避開 mp3 的卡頓，而且依然算在點擊事件內
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(commonWord);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                // 直接 speak，不放 setTimeout，因為手機需要最即時的觸發
+                window.speechSynthesis.speak(utterance);
                 
                 if (isPlayerA) {
                     scoreA++; scoreAElem.innerText = scoreA;
@@ -317,18 +314,7 @@
                 }, 2000);
             } else {
                 effect.className = 'hit-effect wrong';
-                // 播放錯誤音效 (Web Audio API)
-                if(audioCtx) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth';
-                    osc.frequency.value = 200;
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.2);
-                }
+                wrongAudio.play().catch(()=>{});
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
             }
         }
