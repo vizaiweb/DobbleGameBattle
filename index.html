@@ -37,8 +37,6 @@
             cursor: pointer; transition: 0.2s;
         }
         .center-message .word-display:hover { transform: scale(1.05); }
-        .center-message .speak-hint { font-size: 1.2rem; color: #fff; background: #3498db; padding: 10px 20px; border-radius: 10px; display: inline-block; cursor: pointer; }
-        .center-message .speak-hint:active { background: #2980b9; }
 
         #orientation-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 30px; }
         #orientation-blocker h2 { font-size: 1.5rem; margin-bottom: 20px; color: #e09d32;}
@@ -289,7 +287,7 @@
                 // 🎙️ 立即觸發發音
                 speakWord(commonWord);
                 
-                // 🔊 播放答對音效 (參考你提供的版本)
+                // 🔊 播放答對音效
                 if(audioCtx) {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
@@ -302,12 +300,11 @@
                     osc.stop(audioCtx.currentTime + 0.1);
                 }
                 
-                // 🎯 彈出文字框
+                // 🎯 彈出文字框 (已移除 Tap to Listen)
                 let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
                 centerMsg.innerHTML = `
                     ${winnerText}
                     <div class="word-display" onclick="speakWord('${commonWord}')">${commonWord}</div>
-                    <div class="speak-hint" onclick="speakWord('${commonWord}')">🔊 Tap to Listen</div>
                 `;
                 centerMsg.style.display = 'block';
                 
@@ -324,7 +321,7 @@
             } else {
                 effect.className = 'hit-effect wrong';
                 
-                // 🔊 播放答錯音效 (參考你提供的版本)
+                // 🔊 播放答錯音效
                 if(audioCtx) {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
