@@ -25,13 +25,12 @@
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
-        /* 中央提示框升級 */
         .center-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: rgba(0,0,0,0.9); color: #fff; padding: 30px 60px; border-radius: 25px; 
             font-size: 1.8rem; font-weight: bold; display: none; z-index: 20; text-align: center; 
             box-shadow: 0 15px 40px rgba(0,0,0,0.7); border: 3px solid #e09d32; 
-            pointer-events: auto; /* 允許點擊 */
+            pointer-events: auto;
         }
         .center-message .word-display { 
             font-size: 3rem; color: #2ecc71; margin: 15px 0; text-transform: uppercase; letter-spacing: 2px; 
@@ -260,7 +259,6 @@
                 
                 let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
                 
-                // 🎯 彈出文字框，並加入「點擊聽發音」的區塊
                 centerMsg.innerHTML = `
                     ${winnerText}
                     <div class="word-display" onclick="speakWord('${commonWord}')">${commonWord}</div>
@@ -277,15 +275,15 @@
                 setTimeout(() => { 
                     centerMsg.style.display = 'none'; 
                     nextRound(); 
-                }, 3000); // 延長到 3 秒，讓玩家有時間點擊發音
+                }, 3000);
             } else {
                 effect.className = 'hit-effect wrong';
+                // 🔊 播放錯誤音效
                 wrongAudio.play().catch(()=>{});
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
             }
         }
 
-        // 將 speakWord 綁定到 window，讓 HTML 的 onclick 可以呼叫
         window.speakWord = speakWord;
 
         document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'A'));
