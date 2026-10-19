@@ -28,47 +28,22 @@
 
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
 
-        /* 📱 強制橫屏遮罩 */
-        #orientation-blocker {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #111;
-            color: white;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            text-align: center;
-            padding: 30px;
-        }
+        /* 直向遮罩 */
+        #orientation-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 30px; }
         #orientation-blocker h2 { font-size: 1.5rem; margin-bottom: 20px; color: #e09d32;}
         #orientation-blocker .icon { font-size: 4rem; margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out; }
-
-        @keyframes rotatePhone {
-            0% { transform: rotate(0deg); }
-            50% { transform: rotate(90deg); }
-            100% { transform: rotate(0deg); }
-        }
-
-        /* 當螢幕為直立時，顯示遮罩並隱藏遊戲 */
-        @media (orientation: portrait) {
-            #orientation-blocker { display: flex; }
-            .game-board { display: none; }
-            .settings-btn { display: none; }
-        }
+        @keyframes rotatePhone { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+        @media (orientation: portrait) { #orientation-blocker { display: flex; } .game-board { display: none; } .settings-btn { display: none; } }
     </style>
 </head>
 <body>
 
-    <!-- 直向遮罩 -->
     <div id="orientation-blocker">
         <div class="icon">📱</div>
         <h2>Please Rotate Your Device</h2>
         <p style="color:#aaa;">This game requires landscape mode.</p>
     </div>
 
-    <!-- 右上角齒輪按鈕 -->
     <a href="jsonEditor.html" class="settings-btn" title="Edit JSON">⚙️</a>
 
     <div class="game-board">
@@ -103,6 +78,7 @@
         let roundActive = false;
         let cardA_Data = null, cardB_Data = null;
         let currentIdxA = -1, currentIdxB = -1;
+        let voicesLoaded = false;
 
         const imgA = document.getElementById('imgA');
         const imgB = document.getElementById('imgB');
@@ -115,20 +91,50 @@
         const rightAudio = new Audio('sounds/right.mp3');
         const wrongAudio = new Audio('sounds/wrong.mp3');
 
+        // 🎙️ 預先載入語音包
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                voicesLoaded = true;
+            };
+        }
+
+        // 🔓 解鎖語音功能 (必須由使用者手勢觸發)
+        function unlockAudio() {
+            if ('speechSynthesis' in window) {
+                // 唸一個空白字元，喚醒語音引擎
+                const u = new SpeechSynthesisUtterance(' ');
+                u.volume = 0;
+                window.speechSynthesis.speak(u);
+            }
+            // 移除監聽，避免一直觸發
+            document.body.removeEventListener('pointerdown', unlockAudio);
+        }
+        document.body.addEventListener('pointerdown', unlockAudio);
+
         // 🎙️ 語音朗讀功能
         function speakWord(word) {
-            if (!window.speechSynthesis) return;
+            if (!('speechSynthesis' in window)) {
+                alert("您的瀏覽器不支援語音朗讀功能！");
+                return;
+            }
+            
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(word);
             utterance.lang = 'en-US';
-            utterance.rate = 0.9;
+            utterance.rate = 0.85; // 稍微放慢一點點，聽起來更清楚
             utterance.pitch = 1.0;
+            utterance.volume = 1.0;
             
             const voices = window.speechSynthesis.getVoices();
-            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha'));
-            if (preferredVoice) {
-                utterance.voice = preferredVoice;
+            // 尋找英文語音
+            let selectedVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            // 偏好選擇高品質的語音
+            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
+            if (preferredVoice) selectedVoice = preferredVoice;
+
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
             }
             
             window.speechSynthesis.speak(utterance);
@@ -168,10 +174,7 @@
         window.addEventListener('beforeunload', () => {
             if (roundActive) {
                 sessionStorage.setItem('dobbleState', JSON.stringify({
-                    scoreA: scoreA,
-                    scoreB: scoreB,
-                    idxA: currentIdxA,
-                    idxB: currentIdxB
+                    scoreA: scoreA, scoreB: scoreB, idxA: currentIdxA, idxB: currentIdxB
                 }));
             }
         });
@@ -265,7 +268,7 @@
                 roundActive = false;
                 rightAudio.play().catch(()=>{});
                 
-                // 🎙️ 唸出共同單字
+                // 🎙️ 確保點擊時同步唸出單字
                 speakWord(commonWord);
                 
                 if (isPlayerA) {
