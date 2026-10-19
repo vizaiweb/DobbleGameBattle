@@ -25,22 +25,21 @@
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
+        /* 中央提示框升級 */
         .center-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; 
+            background: rgba(0,0,0,0.9); color: #fff; padding: 30px 60px; border-radius: 25px; 
             font-size: 1.8rem; font-weight: bold; display: none; z-index: 20; text-align: center; 
-            pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7); border: 3px solid #e09d32; 
+            pointer-events: auto; /* 允許點擊 */
         }
-        .center-message .word-display { font-size: 2.5rem; color: #2ecc71; margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; }
-
-        /* 隱藏的發音觸發按鈕 (手機端解鎖語音的關鍵) */
-        #speakTrigger {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0;
-            z-index: -1;
-            pointer-events: none; /* 讓它隱形但依然能被程式點擊 */
+        .center-message .word-display { 
+            font-size: 3rem; color: #2ecc71; margin: 15px 0; text-transform: uppercase; letter-spacing: 2px; 
+            cursor: pointer; transition: 0.2s;
         }
+        .center-message .word-display:hover { transform: scale(1.05); }
+        .center-message .speak-hint { font-size: 1.2rem; color: #fff; background: #3498db; padding: 10px 20px; border-radius: 10px; display: inline-block; cursor: pointer; }
+        .center-message .speak-hint:active { background: #2980b9; }
 
         #orientation-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 30px; }
         #orientation-blocker h2 { font-size: 1.5rem; margin-bottom: 20px; color: #e09d32;}
@@ -58,8 +57,6 @@
     </div>
 
     <a href="jsonEditor.html" class="settings-btn" title="Edit JSON">⚙️</a>
-
-    <button id="speakTrigger"></button>
 
     <div class="game-board">
         <div class="player-area left" id="playerA">
@@ -101,7 +98,9 @@
         const scoreAElem = document.getElementById('scoreA');
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
-        const speakTrigger = document.getElementById('speakTrigger');
+
+        const rightAudio = new Audio('sounds/right.mp3');
+        const wrongAudio = new Audio('sounds/wrong.mp3');
 
         // 🎙️ 取得語音包
         let voices = [];
@@ -115,21 +114,7 @@
             loadVoices();
         }
 
-        // 🔓 在網頁載入時，先偷偷觸發一次解鎖（有些 Android 允許這樣做）
-        window.addEventListener('load', () => {
-            if ('speechSynthesis' in window) {
-                const u = new SpeechSynthesisUtterance(' ');
-                u.volume = 0;
-                window.speechSynthesis.speak(u);
-            }
-        });
-
-        // 🎙️ 核心發音：綁定在隱藏按鈕上
-        speakTrigger.addEventListener('click', () => {
-            if (!commonWord) return;
-            speakWord(commonWord);
-        });
-
+        // 🎙️ 核心發音函式
         function speakWord(word) {
             if (!('speechSynthesis' in window)) return;
             
@@ -137,6 +122,7 @@
             const utterance = new SpeechSynthesisUtterance(word);
             utterance.lang = 'en-US';
             utterance.rate = 0.85;
+            utterance.pitch = 1.0;
             
             const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
             if (preferredVoice) utterance.voice = preferredVoice;
@@ -270,14 +256,16 @@
             if (hitHotspot.word === commonWord) {
                 effect.className = 'hit-effect correct';
                 roundActive = false;
+                rightAudio.play().catch(()=>{});
                 
-                // 🎙️ 手機端終極解法：用程式模擬點擊隱藏按鈕
-                // 這樣 speechSynthesis 就會認為這是「使用者主動點擊」而允許播放
-                speakTrigger.click();
-                
-                // 顯示提示
                 let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
-                centerMsg.innerHTML = `${winnerText}<div class="word-display">${commonWord}</div>`;
+                
+                // 🎯 彈出文字框，並加入「點擊聽發音」的區塊
+                centerMsg.innerHTML = `
+                    ${winnerText}
+                    <div class="word-display" onclick="speakWord('${commonWord}')">${commonWord}</div>
+                    <div class="speak-hint" onclick="speakWord('${commonWord}')">🔊 Tap to Listen</div>
+                `;
                 centerMsg.style.display = 'block';
                 
                 if (isPlayerA) {
@@ -289,12 +277,16 @@
                 setTimeout(() => { 
                     centerMsg.style.display = 'none'; 
                     nextRound(); 
-                }, 2000);
+                }, 3000); // 延長到 3 秒，讓玩家有時間點擊發音
             } else {
                 effect.className = 'hit-effect wrong';
+                wrongAudio.play().catch(()=>{});
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
             }
         }
+
+        // 將 speakWord 綁定到 window，讓 HTML 的 onclick 可以呼叫
+        window.speakWord = speakWord;
 
         document.getElementById('cardContainerA').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'A'));
         document.getElementById('cardContainerB').addEventListener('pointerdown', (e) => handlePlayerClick(e, 'B'));
