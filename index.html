@@ -55,7 +55,6 @@
         .ctrl-btn:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
         .ctrl-btn:active { transform: scale(0.95); }
 
-        /* 🆕 中央頂部局數顯示器 */
         .round-display {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.7); color: #e09d32; font-size: 1.2rem; font-weight: bold;
@@ -143,7 +142,6 @@
         <button class="ctrl-btn" id="restartBtn" title="Restart Game">🔄</button>
     </div>
 
-    <!-- 🆕 局數顯示器 -->
     <div class="round-display" id="roundDisplay">Round: 1 / 5</div>
 
     <div class="game-board">
@@ -299,7 +297,6 @@
                 scoreLabelB.innerHTML = `Player B: <span id="scoreB">0</span>`;
             }
 
-            // 🆕 顯示局數控制板
             roundDisplay.style.display = 'block';
 
             init();
@@ -311,8 +308,21 @@
                 const data = await res.json();
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData;
+                
+                // 🚀 預加載所有圖片
+                preloadImages();
+                
                 nextRound();
             } catch (e) { console.error("Failed to load JSON", e); }
+        }
+
+        // 🚀 預加載機制：將所有圖片載入瀏覽器快取
+        function preloadImages() {
+            console.log("開始預加載圖片...");
+            for (let i = 0; i < currentCards.length; i++) {
+                const img = new Image();
+                img.src = `${imageBaseUrl}${i + 1}.png`;
+            }
         }
 
         function findCommonWord(cardA, cardB) {
@@ -326,7 +336,7 @@
         function nextRound() {
             if (currentRound >= maxRounds) {
                 roundActive = false;
-                roundDisplay.style.display = 'none'; // 結束時隱藏局數
+                roundDisplay.style.display = 'none';
                 let finalMsg = "";
                 if (scoreA > scoreB) finalMsg = "🏆 Player A Wins!";
                 else if (scoreB > scoreA) finalMsg = gameMode === "COM" ? "🤖 Computer Wins!" : "🏆 Player B Wins!";
@@ -338,7 +348,6 @@
             }
 
             currentRound++;
-            // 🆕 更新局數顯示
             roundDisplay.innerText = `Round: ${currentRound} / ${maxRounds}`;
 
             let idxA, idxB;
@@ -481,6 +490,9 @@
                 osc.stop(audioCtx.currentTime + 0.1);
             }
 
+            // 🌟 亮起兩邊的正確熱區
+            highlightBothCorrectSpots();
+
             let points = 1;
             let comboMsg = "";
             
@@ -520,6 +532,33 @@
                 centerMsg.style.display = 'none'; 
                 nextRound(); 
             }, 2500);
+        }
+
+        // 🌟 讓兩邊的熱區同時閃爍綠光
+        function highlightBothCorrectSpots() {
+            // Player A 的正確位置
+            const spotA = cardA_Data.hotspots.find(h => h.word === commonWord);
+            if (spotA) {
+                // 由於 A 的圖片旋轉了 90 度，需反轉座標
+                let displayX_A = 1 - spotA.y;
+                let displayY_A = spotA.x;
+                hitEffectA.style.left = `${displayX_A * 100}%`;
+                hitEffectA.style.top = `${displayY_A * 100}%`;
+                hitEffectA.style.width = `${spotA.r * 2 * 100}%`;
+                hitEffectA.className = 'hit-effect correct';
+            }
+
+            // Player B 的正確位置
+            const spotB = cardB_Data.hotspots.find(h => h.word === commonWord);
+            if (spotB) {
+                // 由於 B 的圖片旋轉了 -90 度，需反轉座標
+                let displayX_B = spotB.y;
+                let displayY_B = 1 - spotB.x;
+                hitEffectB.style.left = `${displayX_B * 100}%`;
+                hitEffectB.style.top = `${displayY_B * 100}%`;
+                hitEffectB.style.width = `${spotB.r * 2 * 100}%`;
+                hitEffectB.className = 'hit-effect correct';
+            }
         }
 
         function handleWrong(isPlayerA, effect) {
