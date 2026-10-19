@@ -2270,60 +2270,60 @@
         {
             "cardId": 36,
             "words": [
-                4,
                 14,
+                40,
+                53,
                 17,
                 27,
-                30,
-                40,
                 43,
-                53
+                30,
+                4
             ],
             "hotspots": [
                 {
-                    "word": "Argentina",
+                    "word": "Croatia",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Croatia",
+                    "word": "South Africa",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Ecuador",
+                    "word": "Chile",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Jordan",
+                    "word": "Ecuador",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Netherlands",
+                    "word": "Jordan",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "South Africa",
+                    "word": "Switzerland",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Switzerland",
+                    "word": "Netherlands",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Chile",
+                    "word": "Argentina",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2336,10 +2336,10 @@
                 5,
                 8,
                 19,
-                23,
                 34,
-                38,
+                23,
                 49,
+                38,
                 53
             ],
             "hotspots": [
@@ -2362,25 +2362,25 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Haiti",
+                    "word": "Paraguay",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Paraguay",
+                    "word": "Haiti",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Scotland",
+                    "word": "Poland",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Poland",
+                    "word": "Scotland",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
@@ -2396,30 +2396,30 @@
         {
             "cardId": 38,
             "words": [
+                43,
                 5,
-                9,
-                20,
+                54,
                 24,
+                9,
                 35,
                 39,
-                43,
-                54
+                20
             ],
             "hotspots": [
                 {
-                    "word": "Australia",
+                    "word": "Switzerland",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Brazil",
+                    "word": "Australia",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "France",
+                    "word": "Peru",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
@@ -2431,25 +2431,25 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Portugal",
+                    "word": "Brazil",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Senegal",
+                    "word": "Portugal",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Switzerland",
+                    "word": "Senegal",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Peru",
+                    "word": "France",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2459,30 +2459,30 @@
         {
             "cardId": 39,
             "words": [
-                5,
                 10,
                 21,
+                5,
                 25,
-                29,
                 40,
+                29,
                 44,
                 55
             ],
             "hotspots": [
                 {
-                    "word": "Australia",
+                    "word": "Cabo Verde",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Cabo Verde",
+                    "word": "Germany",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Germany",
+                    "word": "Australia",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
@@ -2494,13 +2494,13 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Morocco",
+                    "word": "South Africa",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "South Africa",
+                    "word": "Morocco",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
@@ -2522,48 +2522,48 @@
         {
             "cardId": 40,
             "words": [
-                5,
                 11,
                 15,
                 26,
-                30,
+                5,
                 41,
+                30,
                 45,
                 56
             ],
             "hotspots": [
                 {
-                    "word": "Australia",
+                    "word": "Colombia",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Colombia",
+                    "word": "Curaçao",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Curaçao",
+                    "word": "Japan",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Japan",
+                    "word": "Australia",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Netherlands",
+                    "word": "Spain",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Spain",
+                    "word": "Netherlands",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
@@ -2585,30 +2585,30 @@
         {
             "cardId": 41,
             "words": [
-                5,
-                12,
-                16,
-                27,
-                31,
                 42,
-                46,
-                50
+                31,
+                12,
+                27,
+                5,
+                16,
+                50,
+                46
             ],
             "hotspots": [
                 {
-                    "word": "Australia",
+                    "word": "Sweden",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Congo DR",
+                    "word": "New Zealand",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Czechia",
+                    "word": "Congo DR",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
@@ -2620,25 +2620,25 @@
                     "r": 0.12
                 },
                 {
-                    "word": "New Zealand",
+                    "word": "Australia",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Sweden",
+                    "word": "Czechia",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Uruguay",
+                    "word": "Denmark",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Denmark",
+                    "word": "Uruguay",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2648,30 +2648,30 @@
         {
             "cardId": 42,
             "words": [
-                5,
-                13,
                 17,
-                28,
-                32,
                 36,
                 47,
-                51
+                28,
+                51,
+                5,
+                32,
+                13
             ],
             "hotspots": [
                 {
-                    "word": "Australia",
+                    "word": "Ecuador",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Côte d'Ivoire",
+                    "word": "Qatar",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Ecuador",
+                    "word": "Uzbekistan",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
@@ -2683,25 +2683,25 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Norway",
+                    "word": "Cameroon",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Qatar",
+                    "word": "Australia",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Uzbekistan",
+                    "word": "Norway",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Cameroon",
+                    "word": "Côte d'Ivoire",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2711,60 +2711,60 @@
         {
             "cardId": 43,
             "words": [
-                5,
                 14,
                 18,
-                22,
                 33,
                 37,
+                22,
                 48,
-                52
+                52,
+                5
             ],
             "hotspots": [
                 {
-                    "word": "Australia",
+                    "word": "Croatia",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Croatia",
+                    "word": "Egypt",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Egypt",
+                    "word": "Panama",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Ghana",
+                    "word": "Saudi Arabia",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Panama",
+                    "word": "Ghana",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Saudi Arabia",
+                    "word": "Italy",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Italy",
+                    "word": "Nigeria",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Nigeria",
+                    "word": "Australia",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2775,12 +2775,12 @@
             "cardId": 44,
             "words": [
                 6,
+                25,
                 8,
                 20,
-                25,
+                47,
                 30,
                 42,
-                47,
                 52
             ],
             "hotspots": [
@@ -2791,37 +2791,37 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Bosnia and Herzegovina",
+                    "word": "Iraq",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "France",
+                    "word": "Bosnia and Herzegovina",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Iraq",
+                    "word": "France",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Netherlands",
+                    "word": "Uzbekistan",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Sweden",
+                    "word": "Netherlands",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Uzbekistan",
+                    "word": "Sweden",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
@@ -2837,24 +2837,24 @@
         {
             "cardId": 45,
             "words": [
-                6,
-                9,
-                21,
                 26,
+                6,
+                21,
                 31,
                 36,
-                48,
-                53
+                9,
+                53,
+                48
             ],
             "hotspots": [
                 {
-                    "word": "Austria",
+                    "word": "Japan",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Brazil",
+                    "word": "Austria",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
@@ -2866,31 +2866,31 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Japan",
+                    "word": "New Zealand",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "New Zealand",
+                    "word": "Qatar",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Qatar",
+                    "word": "Brazil",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Italy",
+                    "word": "Chile",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Chile",
+                    "word": "Italy",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2900,60 +2900,60 @@
         {
             "cardId": 46,
             "words": [
-                6,
-                10,
-                15,
-                27,
                 32,
+                27,
+                6,
+                54,
                 37,
                 49,
-                54
+                15,
+                10
             ],
             "hotspots": [
                 {
-                    "word": "Austria",
+                    "word": "Norway",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Cabo Verde",
+                    "word": "Jordan",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Curaçao",
+                    "word": "Austria",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Jordan",
+                    "word": "Peru",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Norway",
+                    "word": "Saudi Arabia",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Saudi Arabia",
+                    "word": "Poland",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Poland",
+                    "word": "Curaçao",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Peru",
+                    "word": "Cabo Verde",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -2963,36 +2963,36 @@
         {
             "cardId": 47,
             "words": [
-                6,
-                11,
-                16,
                 28,
-                33,
                 38,
+                55,
+                16,
+                33,
                 43,
-                55
+                6,
+                11
             ],
             "hotspots": [
                 {
-                    "word": "Austria",
+                    "word": "Korea Republic",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Colombia",
+                    "word": "Scotland",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Czechia",
+                    "word": "China PR",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Korea Republic",
+                    "word": "Czechia",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
@@ -3004,19 +3004,19 @@
                     "r": 0.17
                 },
                 {
-                    "word": "Scotland",
+                    "word": "Switzerland",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Switzerland",
+                    "word": "Austria",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "China PR",
+                    "word": "Colombia",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3026,60 +3026,60 @@
         {
             "cardId": 48,
             "words": [
-                6,
-                12,
-                17,
-                22,
-                34,
                 39,
                 44,
-                56
+                34,
+                56,
+                6,
+                22,
+                17,
+                12
             ],
             "hotspots": [
                 {
-                    "word": "Austria",
+                    "word": "Senegal",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Congo DR",
+                    "word": "Tunisia",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Ecuador",
+                    "word": "Paraguay",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Ghana",
+                    "word": "Costa Rica",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Paraguay",
+                    "word": "Austria",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Senegal",
+                    "word": "Ghana",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Tunisia",
+                    "word": "Ecuador",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Costa Rica",
+                    "word": "Congo DR",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3089,36 +3089,36 @@
         {
             "cardId": 49,
             "words": [
-                6,
                 13,
                 18,
-                23,
-                35,
-                40,
                 45,
-                50
+                40,
+                35,
+                6,
+                50,
+                23
             ],
             "hotspots": [
                 {
-                    "word": "Austria",
+                    "word": "Côte d'Ivoire",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Côte d'Ivoire",
+                    "word": "Egypt",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Egypt",
+                    "word": "Türkiye",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Haiti",
+                    "word": "South Africa",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
@@ -3130,19 +3130,19 @@
                     "r": 0.17
                 },
                 {
-                    "word": "South Africa",
+                    "word": "Austria",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Türkiye",
+                    "word": "Denmark",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Denmark",
+                    "word": "Haiti",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3152,60 +3152,60 @@
         {
             "cardId": 50,
             "words": [
-                6,
-                14,
-                19,
-                24,
                 29,
                 41,
                 46,
-                51
+                51,
+                19,
+                14,
+                24,
+                6
             ],
             "hotspots": [
                 {
-                    "word": "Austria",
+                    "word": "Morocco",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Croatia",
+                    "word": "Spain",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "England",
+                    "word": "Uruguay",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "IR Iran",
+                    "word": "Cameroon",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Morocco",
+                    "word": "England",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Spain",
+                    "word": "Croatia",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Uruguay",
+                    "word": "IR Iran",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Cameroon",
+                    "word": "Austria",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3216,13 +3216,13 @@
             "cardId": 51,
             "words": [
                 7,
+                51,
                 8,
-                21,
-                27,
-                33,
                 39,
                 45,
-                51
+                21,
+                33,
+                27
             ],
             "hotspots": [
                 {
@@ -3232,43 +3232,43 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Bosnia and Herzegovina",
+                    "word": "Cameroon",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Germany",
+                    "word": "Bosnia and Herzegovina",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Jordan",
+                    "word": "Senegal",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Panama",
+                    "word": "Türkiye",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Senegal",
+                    "word": "Germany",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Türkiye",
+                    "word": "Panama",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Cameroon",
+                    "word": "Jordan",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3278,60 +3278,60 @@
         {
             "cardId": 52,
             "words": [
+                52,
                 7,
-                9,
-                15,
-                28,
-                34,
                 40,
+                34,
                 46,
-                52
+                9,
+                28,
+                15
             ],
             "hotspots": [
                 {
-                    "word": "Belgium",
+                    "word": "Nigeria",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Brazil",
+                    "word": "Belgium",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Curaçao",
+                    "word": "South Africa",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Korea Republic",
+                    "word": "Paraguay",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Paraguay",
+                    "word": "Uruguay",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "South Africa",
+                    "word": "Brazil",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Uruguay",
+                    "word": "Korea Republic",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Nigeria",
+                    "word": "Curaçao",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3341,60 +3341,60 @@
         {
             "cardId": 53,
             "words": [
-                7,
-                10,
-                16,
-                22,
                 35,
                 41,
                 47,
-                53
+                7,
+                53,
+                10,
+                16,
+                22
             ],
             "hotspots": [
                 {
-                    "word": "Belgium",
+                    "word": "Portugal",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Cabo Verde",
+                    "word": "Spain",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Czechia",
+                    "word": "Uzbekistan",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Ghana",
+                    "word": "Belgium",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Portugal",
+                    "word": "Chile",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Spain",
+                    "word": "Cabo Verde",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Uzbekistan",
+                    "word": "Czechia",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Chile",
+                    "word": "Ghana",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3404,30 +3404,30 @@
         {
             "cardId": 54,
             "words": [
-                7,
-                11,
                 17,
-                23,
-                29,
+                54,
                 42,
+                23,
+                7,
                 48,
-                54
+                29,
+                11
             ],
             "hotspots": [
                 {
-                    "word": "Belgium",
+                    "word": "Ecuador",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Colombia",
+                    "word": "Peru",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "Ecuador",
+                    "word": "Sweden",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
@@ -3439,25 +3439,25 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Morocco",
+                    "word": "Belgium",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Sweden",
+                    "word": "Italy",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Italy",
+                    "word": "Morocco",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Peru",
+                    "word": "Colombia",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3467,18 +3467,18 @@
         {
             "cardId": 55,
             "words": [
-                7,
-                12,
-                18,
-                24,
-                30,
                 36,
+                12,
                 49,
-                55
+                30,
+                18,
+                7,
+                55,
+                24
             ],
             "hotspots": [
                 {
-                    "word": "Belgium",
+                    "word": "Qatar",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
@@ -3490,37 +3490,37 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Egypt",
+                    "word": "Poland",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "IR Iran",
+                    "word": "Netherlands",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Netherlands",
+                    "word": "Egypt",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Qatar",
+                    "word": "Belgium",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Poland",
+                    "word": "China PR",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "China PR",
+                    "word": "IR Iran",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3530,42 +3530,42 @@
         {
             "cardId": 56,
             "words": [
-                7,
-                13,
                 19,
-                25,
                 31,
-                37,
                 43,
-                56
+                56,
+                13,
+                37,
+                7,
+                18
             ],
             "hotspots": [
                 {
-                    "word": "Belgium",
+                    "word": "England",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Côte d'Ivoire",
+                    "word": "New Zealand",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "England",
+                    "word": "Switzerland",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Iraq",
+                    "word": "Costa Rica",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "New Zealand",
+                    "word": "Côte d'Ivoire",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
@@ -3577,13 +3577,13 @@
                     "r": 0.12
                 },
                 {
-                    "word": "Switzerland",
+                    "word": "Belgium",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Costa Rica",
+                    "word": "Egypt",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
@@ -3593,60 +3593,60 @@
         {
             "cardId": 57,
             "words": [
-                7,
-                14,
                 20,
-                26,
                 32,
                 38,
+                14,
                 44,
-                50
+                26,
+                50,
+                7
             ],
             "hotspots": [
                 {
-                    "word": "Belgium",
+                    "word": "France",
                     "x": 0.19,
                     "y": 0.189,
                     "r": 0.12
                 },
                 {
-                    "word": "Croatia",
+                    "word": "Norway",
                     "x": 0.501,
                     "y": 0.19,
                     "r": 0.12
                 },
                 {
-                    "word": "France",
+                    "word": "Scotland",
                     "x": 0.808,
                     "y": 0.192,
                     "r": 0.12
                 },
                 {
-                    "word": "Japan",
+                    "word": "Croatia",
                     "x": 0.189,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Norway",
+                    "word": "Tunisia",
                     "x": 0.498,
                     "y": 0.628,
                     "r": 0.17
                 },
                 {
-                    "word": "Scotland",
+                    "word": "Japan",
                     "x": 0.809,
                     "y": 0.5,
                     "r": 0.12
                 },
                 {
-                    "word": "Tunisia",
+                    "word": "Denmark",
                     "x": 0.187,
                     "y": 0.81,
                     "r": 0.12
                 },
                 {
-                    "word": "Denmark",
+                    "word": "Belgium",
                     "x": 0.812,
                     "y": 0.811,
                     "r": 0.12
