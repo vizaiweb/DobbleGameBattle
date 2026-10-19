@@ -25,7 +25,6 @@
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
-        /* 中央提示框升級 */
         .center-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; 
@@ -33,6 +32,15 @@
             pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; 
         }
         .center-message .word-display { font-size: 2.5rem; color: #2ecc71; margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* 隱藏的發音觸發按鈕 (手機端解鎖語音的關鍵) */
+        #speakTrigger {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            z-index: -1;
+            pointer-events: none; /* 讓它隱形但依然能被程式點擊 */
+        }
 
         #orientation-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 30px; }
         #orientation-blocker h2 { font-size: 1.5rem; margin-bottom: 20px; color: #e09d32;}
@@ -50,6 +58,8 @@
     </div>
 
     <a href="jsonEditor.html" class="settings-btn" title="Edit JSON">⚙️</a>
+
+    <button id="speakTrigger"></button>
 
     <div class="game-board">
         <div class="player-area left" id="playerA">
@@ -91,9 +101,7 @@
         const scoreAElem = document.getElementById('scoreA');
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
-
-        const rightAudio = new Audio('sounds/right.mp3');
-        const wrongAudio = new Audio('sounds/wrong.mp3');
+        const speakTrigger = document.getElementById('speakTrigger');
 
         // 🎙️ 取得語音包
         let voices = [];
@@ -107,50 +115,32 @@
             loadVoices();
         }
 
-        // 🔓 解鎖音效
-        let audioUnlocked = false;
-        function unlockAudio() {
-            if (audioUnlocked) return;
-            
-            rightAudio.play().then(() => { rightAudio.pause(); rightAudio.currentTime = 0; }).catch(()=>{});
-            wrongAudio.play().then(() => { wrongAudio.pause(); wrongAudio.currentTime = 0; }).catch(()=>{});
-            
+        // 🔓 在網頁載入時，先偷偷觸發一次解鎖（有些 Android 允許這樣做）
+        window.addEventListener('load', () => {
             if ('speechSynthesis' in window) {
                 const u = new SpeechSynthesisUtterance(' ');
                 u.volume = 0;
                 window.speechSynthesis.speak(u);
             }
-            
-            audioUnlocked = true;
-            document.body.removeEventListener('pointerdown', unlockAudio);
-        }
-        document.body.addEventListener('pointerdown', unlockAudio);
+        });
 
-        // 🎙️ 發音核心
+        // 🎙️ 核心發音：綁定在隱藏按鈕上
+        speakTrigger.addEventListener('click', () => {
+            if (!commonWord) return;
+            speakWord(commonWord);
+        });
+
         function speakWord(word) {
             if (!('speechSynthesis' in window)) return;
             
             window.speechSynthesis.cancel();
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-            }
-            
             const utterance = new SpeechSynthesisUtterance(word);
             utterance.lang = 'en-US';
             utterance.rate = 0.85;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
             
             const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
-            const fallbackVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            if (preferredVoice) utterance.voice = preferredVoice;
             
-            if (preferredVoice) {
-                utterance.voice = preferredVoice;
-            } else if (fallbackVoice) {
-                utterance.voice = fallbackVoice;
-            }
-            
-            // 立即發音
             window.speechSynthesis.speak(utterance);
         }
 
@@ -236,7 +226,6 @@
         }
 
         function handlePlayerClick(event, player) {
-            if (!audioUnlocked) unlockAudio();
             if (!roundActive) return;
 
             const isPlayerA = (player === 'A');
@@ -281,12 +270,12 @@
             if (hitHotspot.word === commonWord) {
                 effect.className = 'hit-effect correct';
                 roundActive = false;
-                rightAudio.play().catch(()=>{});
                 
-                // 🎙️ 立即發音
-                speakWord(commonWord);
+                // 🎙️ 手機端終極解法：用程式模擬點擊隱藏按鈕
+                // 這樣 speechSynthesis 就會認為這是「使用者主動點擊」而允許播放
+                speakTrigger.click();
                 
-                // 🎯 在中央顯示分數與「正確詞彙」
+                // 顯示提示
                 let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
                 centerMsg.innerHTML = `${winnerText}<div class="word-display">${commonWord}</div>`;
                 centerMsg.style.display = 'block';
@@ -303,7 +292,6 @@
                 }, 2000);
             } else {
                 effect.className = 'hit-effect wrong';
-                wrongAudio.play().catch(()=>{});
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
             }
         }
