@@ -8,7 +8,6 @@
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 右上角齒輪按鈕 */
         .settings-btn { position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; text-decoration: none;}
         .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
 
@@ -28,7 +27,6 @@
 
         .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
 
-        /* 直向遮罩 */
         #orientation-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 30px; }
         #orientation-blocker h2 { font-size: 1.5rem; margin-bottom: 20px; color: #e09d32;}
         #orientation-blocker .icon { font-size: 4rem; margin-bottom: 20px; animation: rotatePhone 2s infinite ease-in-out; }
@@ -78,7 +76,6 @@
         let roundActive = false;
         let cardA_Data = null, cardB_Data = null;
         let currentIdxA = -1, currentIdxB = -1;
-        let voicesLoaded = false;
 
         const imgA = document.getElementById('imgA');
         const imgB = document.getElementById('imgB');
@@ -88,53 +85,75 @@
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
 
-        const rightAudio = new Audio('sounds/right.mp3');
-        const wrongAudio = new Audio('sounds/wrong.mp3');
+        // 使用 Web Audio API 來確保音效在手機上正常播放
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
 
-        // 🎙️ 預先載入語音包
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = () => {
-                voicesLoaded = true;
-            };
+        function playSound(url) {
+            if (!audioCtx) return;
+            // 因為我們已經解鎖了 audioCtx，這裡直接播放
+            const audio = new Audio(url);
+            audio.play().catch(e => console.log("Audio play blocked", e));
         }
 
-        // 🔓 解鎖語音功能 (必須由使用者手勢觸發)
-        function unlockAudio() {
+        // 🎙️ 預先載入語音包
+        let availableVoices = [];
+        function loadVoices() {
+            if (!('speechSynthesis' in window)) return;
+            availableVoices = window.speechSynthesis.getVoices();
+        }
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        // 🔓 解鎖機制 (必須在使用者手勢中觸發)
+        function unlockMedia() {
+            // 1. 解鎖 Web Audio API
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // 2. 解鎖語音引擎 (在手機上，必須先唸一個空字串)
             if ('speechSynthesis' in window) {
-                // 唸一個空白字元，喚醒語音引擎
                 const u = new SpeechSynthesisUtterance(' ');
                 u.volume = 0;
                 window.speechSynthesis.speak(u);
             }
-            // 移除監聽，避免一直觸發
-            document.body.removeEventListener('pointerdown', unlockAudio);
-        }
-        document.body.addEventListener('pointerdown', unlockAudio);
 
-        // 🎙️ 語音朗讀功能
+            // 移除監聽，避免一直觸發
+            document.body.removeEventListener('pointerdown', unlockMedia);
+        }
+        document.body.addEventListener('pointerdown', unlockMedia);
+
+        // 🎙️ 核心發音函式
         function speakWord(word) {
-            if (!('speechSynthesis' in window)) {
-                alert("您的瀏覽器不支援語音朗讀功能！");
-                return;
-            }
+            if (!('speechSynthesis' in window)) return;
             
+            // 確保先停止之前的語音
             window.speechSynthesis.cancel();
             
             const utterance = new SpeechSynthesisUtterance(word);
             utterance.lang = 'en-US';
-            utterance.rate = 0.85; // 稍微放慢一點點，聽起來更清楚
+            utterance.rate = 0.85;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
-            const voices = window.speechSynthesis.getVoices();
-            // 尋找英文語音
-            let selectedVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
-            // 偏好選擇高品質的語音
-            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
+            // 挑選語音
+            let selectedVoice = availableVoices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            const preferredVoice = availableVoices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
             if (preferredVoice) selectedVoice = preferredVoice;
 
             if (selectedVoice) {
                 utterance.voice = selectedVoice;
+            }
+            
+            // 手機上必須確保語音引擎沒有被暫停
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
             }
             
             window.speechSynthesis.speak(utterance);
@@ -266,10 +285,22 @@
             if (hitHotspot.word === commonWord) {
                 effect.className = 'hit-effect correct';
                 roundActive = false;
-                rightAudio.play().catch(()=>{});
                 
-                // 🎙️ 確保點擊時同步唸出單字
+                // 🎙️ 立即觸發發音 (在點擊事件的同步階段觸發，手機才不會擋)
                 speakWord(commonWord);
+                
+                // 播放音效 (改用 Web Audio API 確保不卡頓)
+                if(audioCtx) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.value = 800; // 簡單的逼逼聲代替 right.mp3
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                }
                 
                 if (isPlayerA) {
                     scoreA++; scoreAElem.innerText = scoreA;
@@ -286,7 +317,18 @@
                 }, 2000);
             } else {
                 effect.className = 'hit-effect wrong';
-                wrongAudio.play().catch(()=>{});
+                // 播放錯誤音效 (Web Audio API)
+                if(audioCtx) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sawtooth';
+                    osc.frequency.value = 200;
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                }
                 setTimeout(() => { effect.className = 'hit-effect'; }, 500);
             }
         }
