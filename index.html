@@ -55,6 +55,14 @@
         .ctrl-btn:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
         .ctrl-btn:active { transform: scale(0.95); }
 
+        /* 🆕 中央頂部局數顯示器 */
+        .round-display {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #e09d32; font-size: 1.2rem; font-weight: bold;
+            padding: 8px 24px; border-radius: 30px; border: 2px solid #e09d32;
+            z-index: 50; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
         .score-board { position: absolute; top: -35px; font-size: 1.2rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
@@ -135,6 +143,9 @@
         <button class="ctrl-btn" id="restartBtn" title="Restart Game">🔄</button>
     </div>
 
+    <!-- 🆕 局數顯示器 -->
+    <div class="round-display" id="roundDisplay">Round: 1 / 5</div>
+
     <div class="game-board">
         <div class="player-area left" id="playerA">
             <div class="score-board">Player A: <span id="scoreA">0</span></div>
@@ -188,6 +199,7 @@
         const scoreLabelB = document.getElementById('scoreLabelB');
         const centerMsg = document.getElementById('centerMsg');
         const countdownTimer = document.getElementById('countdownTimer');
+        const roundDisplay = document.getElementById('roundDisplay');
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
@@ -248,6 +260,7 @@
             stopAllTimers();
             roundActive = false;
             centerMsg.style.display = 'none';
+            roundDisplay.style.display = 'none';
             document.getElementById('start-overlay').style.display = 'flex';
         });
 
@@ -286,6 +299,9 @@
                 scoreLabelB.innerHTML = `Player B: <span id="scoreB">0</span>`;
             }
 
+            // 🆕 顯示局數控制板
+            roundDisplay.style.display = 'block';
+
             init();
         }
 
@@ -310,6 +326,7 @@
         function nextRound() {
             if (currentRound >= maxRounds) {
                 roundActive = false;
+                roundDisplay.style.display = 'none'; // 結束時隱藏局數
                 let finalMsg = "";
                 if (scoreA > scoreB) finalMsg = "🏆 Player A Wins!";
                 else if (scoreB > scoreA) finalMsg = gameMode === "COM" ? "🤖 Computer Wins!" : "🏆 Player B Wins!";
@@ -321,6 +338,9 @@
             }
 
             currentRound++;
+            // 🆕 更新局數顯示
+            roundDisplay.innerText = `Round: ${currentRound} / ${maxRounds}`;
+
             let idxA, idxB;
             do {
                 idxA = Math.floor(Math.random() * currentCards.length);
@@ -382,7 +402,6 @@
         function handlePlayerClick(event, player, isCom = false) {
             if (!roundActive) return;
             
-            // 🌟 核心修正：只有在 VS COM 模式下，才阻止玩家手動點擊 B
             if (player === 'B' && gameMode === "COM" && !isCom) return;
 
             const isPlayerA = (player === 'A');
