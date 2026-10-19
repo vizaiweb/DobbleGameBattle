@@ -25,7 +25,14 @@
         .hit-effect.correct { background: rgba(46, 204, 113, 0.8); opacity: 1; border-color: #2ecc71; }
         .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
-        .center-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; font-size: 2rem; font-weight: bold; display: none; z-index: 20; text-align: center; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; }
+        /* 中央提示框升級 */
+        .center-message { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: rgba(0,0,0,0.85); color: #fff; padding: 20px 50px; border-radius: 20px; 
+            font-size: 1.8rem; font-weight: bold; display: none; z-index: 20; text-align: center; 
+            pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid #e09d32; 
+        }
+        .center-message .word-display { font-size: 2.5rem; color: #2ecc71; margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; }
 
         #orientation-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 30px; }
         #orientation-blocker h2 { font-size: 1.5rem; margin-bottom: 20px; color: #e09d32;}
@@ -66,7 +73,7 @@
         </div>
     </div>
 
-    <div class="center-message" id="centerMsg">Game Start!</div>
+    <div class="center-message" id="centerMsg"></div>
 
     <script>
         let currentCards = [];
@@ -100,22 +107,14 @@
             loadVoices();
         }
 
-        // 🔓 解鎖音效 (必須由使用者手勢觸發)
+        // 🔓 解鎖音效
         let audioUnlocked = false;
         function unlockAudio() {
             if (audioUnlocked) return;
             
-            // 1. 解鎖 mp3 音效
-            rightAudio.play().then(() => {
-                rightAudio.pause();
-                rightAudio.currentTime = 0;
-            }).catch(()=>{});
-            wrongAudio.play().then(() => {
-                wrongAudio.pause();
-                wrongAudio.currentTime = 0;
-            }).catch(()=>{});
+            rightAudio.play().then(() => { rightAudio.pause(); rightAudio.currentTime = 0; }).catch(()=>{});
+            wrongAudio.play().then(() => { wrongAudio.pause(); wrongAudio.currentTime = 0; }).catch(()=>{});
             
-            // 2. 解鎖語音引擎 (非常重要：在手機上必須先成功執行一次)
             if ('speechSynthesis' in window) {
                 const u = new SpeechSynthesisUtterance(' ');
                 u.volume = 0;
@@ -131,7 +130,6 @@
         function speakWord(word) {
             if (!('speechSynthesis' in window)) return;
             
-            // 手機端必須確保沒有被暫停
             window.speechSynthesis.cancel();
             if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
@@ -143,7 +141,6 @@
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
-            // 優先選擇英文語音
             const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Samantha') || v.name.includes('Microsoft Zira'));
             const fallbackVoice = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
             
@@ -153,10 +150,8 @@
                 utterance.voice = fallbackVoice;
             }
             
-            // 延遲一點點播放，避免被其他音效卡住
-            setTimeout(() => {
-                window.speechSynthesis.speak(utterance);
-            }, 50);
+            // 立即發音
+            window.speechSynthesis.speak(utterance);
         }
 
         async function init() {
@@ -241,9 +236,7 @@
         }
 
         function handlePlayerClick(event, player) {
-            // 每次點擊都先解鎖一次，確保萬無一失
             if (!audioUnlocked) unlockAudio();
-            
             if (!roundActive) return;
 
             const isPlayerA = (player === 'A');
@@ -290,23 +283,19 @@
                 roundActive = false;
                 rightAudio.play().catch(()=>{});
                 
-                // 🎙️ 手機端終極解法：把發音放到下一個事件循環的開頭
-                // 這樣可以避開 mp3 的卡頓，而且依然算在點擊事件內
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(commonWord);
-                utterance.lang = 'en-US';
-                utterance.rate = 0.85;
-                // 直接 speak，不放 setTimeout，因為手機需要最即時的觸發
-                window.speechSynthesis.speak(utterance);
+                // 🎙️ 立即發音
+                speakWord(commonWord);
+                
+                // 🎯 在中央顯示分數與「正確詞彙」
+                let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
+                centerMsg.innerHTML = `${winnerText}<div class="word-display">${commonWord}</div>`;
+                centerMsg.style.display = 'block';
                 
                 if (isPlayerA) {
                     scoreA++; scoreAElem.innerText = scoreA;
-                    centerMsg.innerText = "🎉 Player A Scores!";
                 } else {
                     scoreB++; scoreBElem.innerText = scoreB;
-                    centerMsg.innerText = "🎉 Player B Scores!";
                 }
-                centerMsg.style.display = 'block';
                 
                 setTimeout(() => { 
                     centerMsg.style.display = 'none'; 
