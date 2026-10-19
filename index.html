@@ -309,16 +309,12 @@
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData;
                 
-                // 🚀 預加載所有圖片
                 preloadImages();
-                
                 nextRound();
             } catch (e) { console.error("Failed to load JSON", e); }
         }
 
-        // 🚀 預加載機制：將所有圖片載入瀏覽器快取
         function preloadImages() {
-            console.log("開始預加載圖片...");
             for (let i = 0; i < currentCards.length; i++) {
                 const img = new Image();
                 img.src = `${imageBaseUrl}${i + 1}.png`;
@@ -366,8 +362,9 @@
             imgA.src = `${imageBaseUrl}${idxA + 1}.png`;
             imgB.src = `${imageBaseUrl}${idxB + 1}.png`;
 
-            hitEffectA.style.opacity = 0;
-            hitEffectB.style.opacity = 0;
+            // 重置特效
+            hitEffectA.className = 'hit-effect';
+            hitEffectB.className = 'hit-effect';
 
             roundActive = true;
             
@@ -490,7 +487,6 @@
                 osc.stop(audioCtx.currentTime + 0.1);
             }
 
-            // 🌟 亮起兩邊的正確熱區
             highlightBothCorrectSpots();
 
             let points = 1;
@@ -534,12 +530,12 @@
             }, 2500);
         }
 
-        // 🌟 讓兩邊的熱區同時閃爍綠光
+        // 🌟 修正後的雙邊亮綠光邏輯
         function highlightBothCorrectSpots() {
-            // Player A 的正確位置
+            // Player A (旋轉 90 度)
             const spotA = cardA_Data.hotspots.find(h => h.word === commonWord);
             if (spotA) {
-                // 由於 A 的圖片旋轉了 90 度，需反轉座標
+                // 玩家 A 的點擊反轉公式
                 let displayX_A = 1 - spotA.y;
                 let displayY_A = spotA.x;
                 hitEffectA.style.left = `${displayX_A * 100}%`;
@@ -548,10 +544,10 @@
                 hitEffectA.className = 'hit-effect correct';
             }
 
-            // Player B 的正確位置
+            // Player B (旋轉 -90 度)
             const spotB = cardB_Data.hotspots.find(h => h.word === commonWord);
             if (spotB) {
-                // 由於 B 的圖片旋轉了 -90 度，需反轉座標
+                // 玩家 B 的點擊反轉公式
                 let displayX_B = spotB.y;
                 let displayY_B = 1 - spotB.x;
                 hitEffectB.style.left = `${displayX_B * 100}%`;
