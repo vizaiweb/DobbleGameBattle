@@ -8,7 +8,6 @@
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 🚀 開始頁面 */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 10000;
@@ -43,9 +42,7 @@
             margin-top: 10px;
         }
         #startBtn:active { transform: translateY(6px); box-shadow: 0 0 0 #2E7D32; }
-        #startBtn:disabled { background: #555; box-shadow: 0 6px 0 #222; cursor: not-allowed; }
 
-        /* 🎮 遊戲內控制按鈕 */
         .game-controls {
             position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 50; pointer-events: none;
         }
@@ -62,7 +59,6 @@
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
         .score-board { position: absolute; top: -35px; font-size: 1.2rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
-        /* 倒數計時器 */
         .countdown-timer {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             font-size: 5rem; font-weight: bold; color: #e74c3c;
@@ -104,7 +100,6 @@
 </head>
 <body>
 
-    <!-- 🚀 開始與選擇模式畫面 -->
     <div id="start-overlay">
         <h1>Dobble Battle</h1>
         <p>Select Game Mode & Rounds</p>
@@ -135,7 +130,6 @@
         <p style="color:#aaa;">This game requires landscape mode.</p>
     </div>
 
-    <!-- 🎮 遊戲內控制鍵 -->
     <div class="game-controls">
         <button class="ctrl-btn" id="exitBtn" title="Exit to Menu">❌</button>
         <button class="ctrl-btn" id="restartBtn" title="Restart Game">🔄</button>
@@ -162,7 +156,6 @@
             </div>
         </div>
         
-        <!-- 中央倒數計時 -->
         <div class="countdown-timer" id="countdownTimer">5</div>
     </div>
 
@@ -177,16 +170,13 @@
         let cardA_Data = null, cardB_Data = null;
         let currentIdxA = -1, currentIdxB = -1;
 
-        // 遊戲設定狀態
         let gameMode = "BATTLE"; 
         let maxRounds = 5;
         let currentRound = 0;
         
-        // 連擊與懲罰追蹤
         let comboA = 0, comboB = 0;
         let mistakesA = 0, mistakesB = 0;
 
-        // 計時器
         let countdownInterval = null;
         let comTimeout = null;
 
@@ -195,7 +185,6 @@
         const hitEffectA = document.getElementById('hitEffectA');
         const hitEffectB = document.getElementById('hitEffectB');
         const scoreAElem = document.getElementById('scoreA');
-        const scoreBElem = document.getElementById('scoreB');
         const scoreLabelB = document.getElementById('scoreLabelB');
         const centerMsg = document.getElementById('centerMsg');
         const countdownTimer = document.getElementById('countdownTimer');
@@ -230,7 +219,6 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // --- 介面切換邏輯 ---
         document.getElementById('modeBattle').addEventListener('click', () => {
             gameMode = "BATTLE";
             document.getElementById('modeBattle').classList.add('selected');
@@ -256,7 +244,6 @@
             startGame();
         });
 
-        // ❌ 退出鍵
         document.getElementById('exitBtn').addEventListener('click', () => {
             stopAllTimers();
             roundActive = false;
@@ -264,7 +251,6 @@
             document.getElementById('start-overlay').style.display = 'flex';
         });
 
-        // 🔄 重來鍵
         document.getElementById('restartBtn').addEventListener('click', () => {
             stopAllTimers();
             roundActive = false;
@@ -278,7 +264,6 @@
             countdownTimer.style.display = 'none';
         }
 
-        // 啟動新局
         function startGame() {
             if (!audioCtx) audioCtx = new AudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -294,16 +279,12 @@
             comboA = 0; comboB = 0;
             mistakesA = 0; mistakesB = 0;
             scoreAElem.innerText = scoreA;
-            scoreBElem.innerText = scoreB;
             
-            // 改變 Player B 的文字標籤
             if (gameMode === "COM") {
                 scoreLabelB.innerHTML = `COM: <span id="scoreB">0</span>`;
             } else {
                 scoreLabelB.innerHTML = `Player B: <span id="scoreB">0</span>`;
             }
-            // 重新綁定分數顯示物件
-            window.scoreBElem = document.getElementById('scoreB');
 
             init();
         }
@@ -361,7 +342,6 @@
 
             roundActive = true;
             
-            // 只有在 VS COM 模式下才啟動倒數計時
             if (gameMode === "COM") {
                 startCountdown();
             } else {
@@ -391,7 +371,6 @@
                         countdownTimer.style.display = 'none';
                         clearInterval(countdownInterval);
                         
-                        // 倒數結束，電腦自動點擊
                         if (roundActive && gameMode === "COM") {
                             handlePlayerClick(null, 'B', true);
                         }
@@ -402,7 +381,9 @@
 
         function handlePlayerClick(event, player, isCom = false) {
             if (!roundActive) return;
-            if (player === 'B' && !isCom) return; // 防止 COM 模式下真人亂點右邊
+            
+            // 🌟 核心修正：只有在 VS COM 模式下，才阻止玩家手動點擊 B
+            if (player === 'B' && gameMode === "COM" && !isCom) return;
 
             const isPlayerA = (player === 'A');
             const effect = isPlayerA ? hitEffectA : hitEffectB;
@@ -450,7 +431,6 @@
                 }
 
             } else {
-                // COM 點擊正確答案
                 const correctSpot = cardData.hotspots.find(h => h.word === commonWord);
                 if (correctSpot) {
                     let displayX = 1 - correctSpot.y;
@@ -511,7 +491,7 @@
                 }
                 
                 scoreB += points;
-                window.scoreBElem.innerText = scoreB;
+                document.getElementById('scoreB').innerText = scoreB;
                 
                 let winnerText = gameMode === "COM" ? "🤖 Computer Scores!" : "🎉 Player B Scores!";
                 showCenterMsg(winnerText, comboMsg);
@@ -557,7 +537,7 @@
                 
                 if (mistakesB >= 3) {
                     scoreB = Math.max(0, scoreB - 1);
-                    window.scoreBElem.innerText = scoreB;
+                    document.getElementById('scoreB').innerText = scoreB;
                     mistakesB = 0;
                     penaltyMsg = `<div style="color:#e74c3c; font-size:1.5rem;">❌ 3 Mistakes -1 Point!</div>`;
                 }
