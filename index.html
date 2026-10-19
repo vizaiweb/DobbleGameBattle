@@ -3,42 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dobble - 2 Player Battle</title>
+    <title>Dobble - Battle & VS COM</title>
     <style>
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
+        /* 🚀 開始頁面 (支援三種模式與局數選擇) */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: white; text-align: center;
         }
-        #start-overlay button {
-            padding: 20px 50px; font-size: 1.5rem; font-weight: bold;
+        #start-overlay h1 { font-size: 2.5rem; margin: 0 0 10px 0; color: #e09d32; }
+        #start-overlay p { color: #aaa; font-size: 1.1rem; margin-bottom: 20px;}
+
+        .mode-selection { display: flex; gap: 20px; margin-bottom: 30px; }
+        .mode-btn {
+            padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
+            background: #333; color: white; border: 3px solid #555; border-radius: 15px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .mode-btn:hover { transform: scale(1.05); background: #444; }
+        .mode-btn.selected { background: #4CAF50; border-color: #2E7D32; box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); }
+
+        .round-selection { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 500px; margin-bottom: 30px; }
+        .round-btn {
+            padding: 10px 20px; font-size: 1.2rem; font-weight: bold;
+            background: #333; color: white; border: 2px solid #555; border-radius: 10px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .round-btn:hover { background: #444; }
+        .round-btn.selected { background: #e09d32; border-color: #b87c3a; }
+
+        #startBtn {
+            padding: 20px 60px; font-size: 1.5rem; font-weight: bold;
             background: #4CAF50; color: white; border: none; border-radius: 15px;
             cursor: pointer; box-shadow: 0 6px 0 #2E7D32; transition: 0.1s;
-            margin-top: 20px;
+            margin-top: 10px;
         }
-        #start-overlay button:active { transform: translateY(6px); box-shadow: 0 0 0 #2E7D32; }
-        #start-overlay h1 { font-size: 2.5rem; margin-bottom: 10px; color: #e09d32; }
-        #start-overlay p { color: #aaa; font-size: 1.1rem; margin-bottom: 40px;}
+        #startBtn:active { transform: translateY(6px); box-shadow: 0 0 0 #2E7D32; }
+        #startBtn:disabled { background: #555; box-shadow: 0 6px 0 #222; cursor: not-allowed; }
 
-        /* 🚫 隱藏齒輪按鈕 (保留程式碼以備不時之需) */
-        .settings-btn { 
-            display: none; 
-            position: absolute; top: 15px; right: 20px; z-index: 40; 
-            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); 
-            color: white; font-size: 1.8rem; width: 50px; height: 50px; 
-            border-radius: 50%; align-items: center; justify-content: center; 
-            cursor: pointer; transition: 0.3s; text-decoration: none;
-        }
+        .settings-btn { display: none; position: absolute; top: 15px; right: 20px; z-index: 40; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 1.8rem; width: 50px; height: 50px; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; text-decoration: none;}
         .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
 
         .game-board { display: flex; width: 100%; height: 100%; position: relative; align-items: center; justify-content: center; gap: 20px; padding: 60px 20px 20px; }
         .player-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: 100%; }
         .score-board { position: absolute; top: -35px; font-size: 1.2rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.6); padding: 6px 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 10; }
         
+        /* 倒數計時器 */
+        .countdown-timer {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 5rem; font-weight: bold; color: #e74c3c;
+            text-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+            z-index: 15; pointer-events: none; display: none;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); } }
+
         .card-container { position: relative; width: 95%; max-width: 650px; aspect-ratio: 1/1; border-radius: 20px; background: #fff; cursor: pointer; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.6); margin-top: 30px; }
         .card-rotator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center; }
         .player-area.left .card-rotator { transform: rotate(90deg); }
@@ -73,7 +96,25 @@
 
     <div id="start-overlay">
         <h1>Dobble Battle</h1>
-        <p>Tap below to start and enable voice</p>
+        <p>Select Game Mode & Rounds</p>
+        
+        <div class="mode-selection">
+            <button class="mode-btn selected" id="modeBattle">👥 BATTLE</button>
+            <button class="mode-btn" id="modeCom">🤖 VS COM</button>
+        </div>
+
+        <div class="round-selection" id="roundSelection">
+            <button class="round-btn" data-rounds="1">1</button>
+            <button class="round-btn" data-rounds="3">3</button>
+            <button class="round-btn selected" data-rounds="5">5</button>
+            <button class="round-btn" data-rounds="10">10</button>
+            <button class="round-btn" data-rounds="20">20</button>
+            <button class="round-btn" data-rounds="30">30</button>
+            <button class="round-btn" data-rounds="40">40</button>
+            <button class="round-btn" data-rounds="50">50</button>
+            <button class="round-btn" data-rounds="57">57</button>
+        </div>
+
         <button id="startBtn">🔊 Click to Start</button>
     </div>
 
@@ -83,7 +124,6 @@
         <p style="color:#aaa;">This game requires landscape mode.</p>
     </div>
 
-    <!-- 齒輪按鈕隱藏，但保留程式碼 -->
     <a href="jsonEditor.html" class="settings-btn" title="Edit JSON">⚙️</a>
 
     <div class="game-board">
@@ -106,6 +146,9 @@
                 <div class="hit-effect" id="hitEffectB"></div>
             </div>
         </div>
+        
+        <!-- 中央倒數計時 -->
+        <div class="countdown-timer" id="countdownTimer">5</div>
     </div>
 
     <div class="center-message" id="centerMsg"></div>
@@ -119,6 +162,19 @@
         let cardA_Data = null, cardB_Data = null;
         let currentIdxA = -1, currentIdxB = -1;
 
+        // 遊戲設定
+        let gameMode = "BATTLE"; // BATTLE 或 COM
+        let maxRounds = 5;
+        let currentRound = 0;
+        
+        // 連擊與懲罰追蹤
+        let comboA = 0, comboB = 0;
+        let mistakesA = 0, mistakesB = 0;
+
+        // 倒數計時與電腦計時器
+        let countdownInterval = null;
+        let comTimeout = null;
+
         const imgA = document.getElementById('imgA');
         const imgB = document.getElementById('imgB');
         const hitEffectA = document.getElementById('hitEffectA');
@@ -126,6 +182,7 @@
         const scoreAElem = document.getElementById('scoreA');
         const scoreBElem = document.getElementById('scoreB');
         const centerMsg = document.getElementById('centerMsg');
+        const countdownTimer = document.getElementById('countdownTimer');
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
@@ -157,6 +214,27 @@
             window.speechSynthesis.speak(utterance);
         }
 
+        // 🚀 開始頁面的互動邏輯
+        document.getElementById('modeBattle').addEventListener('click', () => {
+            gameMode = "BATTLE";
+            document.getElementById('modeBattle').classList.add('selected');
+            document.getElementById('modeCom').classList.remove('selected');
+        });
+
+        document.getElementById('modeCom').addEventListener('click', () => {
+            gameMode = "COM";
+            document.getElementById('modeCom').classList.add('selected');
+            document.getElementById('modeBattle').classList.remove('selected');
+        });
+
+        document.querySelectorAll('.round-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('selected'));
+                e.target.classList.add('selected');
+                maxRounds = parseInt(e.target.dataset.rounds);
+            });
+        });
+
         document.getElementById('startBtn').addEventListener('click', () => {
             document.getElementById('start-overlay').style.display = 'none';
             
@@ -169,6 +247,14 @@
                 window.speechSynthesis.speak(u);
             }
 
+            // 重置所有遊戲狀態
+            scoreA = 0; scoreB = 0;
+            currentRound = 0;
+            comboA = 0; comboB = 0;
+            mistakesA = 0; mistakesB = 0;
+            scoreAElem.innerText = scoreA;
+            scoreBElem.innerText = scoreB;
+
             init();
         });
 
@@ -178,48 +264,8 @@
                 const data = await res.json();
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData;
-                
-                const savedState = sessionStorage.getItem('dobbleState');
-                if (savedState) {
-                    const state = JSON.parse(savedState);
-                    scoreA = state.scoreA;
-                    scoreB = state.scoreB;
-                    currentIdxA = state.idxA;
-                    currentIdxB = state.idxB;
-                    
-                    scoreAElem.innerText = scoreA;
-                    scoreBElem.innerText = scoreB;
-                    cardA_Data = currentCards[currentIdxA];
-                    cardB_Data = currentCards[currentIdxB];
-                    commonWord = findCommonWord(cardA_Data, cardB_Data);
-                    
-                    imgA.src = `${imageBaseUrl}${currentIdxA + 1}.png`;
-                    imgB.src = `${imageBaseUrl}${currentIdxB + 1}.png`;
-                    
-                    roundActive = true;
-                } else {
-                    resetGame();
-                }
+                nextRound();
             } catch (e) { console.error("Failed to load JSON", e); }
-        }
-
-        window.addEventListener('beforeunload', () => {
-            if (roundActive) {
-                sessionStorage.setItem('dobbleState', JSON.stringify({
-                    scoreA: scoreA, scoreB: scoreB, idxA: currentIdxA, idxB: currentIdxB
-                }));
-            }
-        });
-
-        function resetGame() {
-            sessionStorage.removeItem('dobbleState');
-            scoreA = 0; scoreB = 0;
-            scoreAElem.innerText = scoreA;
-            scoreBElem.innerText = scoreB;
-            centerMsg.style.display = 'none';
-            hitEffectA.className = 'hit-effect';
-            hitEffectB.className = 'hit-effect';
-            nextRound();
         }
 
         function findCommonWord(cardA, cardB) {
@@ -231,7 +277,20 @@
         }
 
         function nextRound() {
-            if (currentCards.length < 2) return;
+            // 檢查是否達到設定局數
+            if (currentRound >= maxRounds) {
+                roundActive = false;
+                let finalMsg = "";
+                if (scoreA > scoreB) finalMsg = "🏆 Player A Wins!";
+                else if (scoreB > scoreA) finalMsg = gameMode === "COM" ? "🤖 Computer Wins!" : "🏆 Player B Wins!";
+                else finalMsg = "🤝 It's a Tie!";
+
+                centerMsg.innerHTML = `<div style="font-size:2.5rem; color:#e09d32;">${finalMsg}</div><div style="font-size:1.5rem; margin-top:10px;">Final Score: A ${scoreA} - ${scoreB} B</div>`;
+                centerMsg.style.display = 'block';
+                return;
+            }
+
+            currentRound++;
             let idxA, idxB;
             do {
                 idxA = Math.floor(Math.random() * currentCards.length);
@@ -248,105 +307,241 @@
             imgA.src = `${imageBaseUrl}${idxA + 1}.png`;
             imgB.src = `${imageBaseUrl}${idxB + 1}.png`;
 
+            // 將特效歸零
+            hitEffectA.style.opacity = 0;
+            hitEffectB.style.opacity = 0;
+
             roundActive = true;
-            hitEffectA.className = 'hit-effect';
-            hitEffectB.className = 'hit-effect';
+            startCountdown();
         }
 
-        function handlePlayerClick(event, player) {
+        // ⏱️ 倒數計時與電腦判定
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            clearTimeout(comTimeout);
+
+            countdownTimer.style.display = 'block';
+            let count = 5;
+            countdownTimer.innerText = count;
+
+            // 新局開始 2 秒後，開始顯示倒數
+            setTimeout(() => {
+                if (!roundActive) return;
+                
+                countdownInterval = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        countdownTimer.innerText = count;
+                        countdownTimer.style.animation = 'none';
+                        countdownTimer.offsetHeight; // 觸發重繪
+                        countdownTimer.style.animation = 'pulse 1s infinite';
+                    } else {
+                        countdownTimer.style.display = 'none';
+                        clearInterval(countdownInterval);
+                        
+                        // 如果倒數結束，玩家還沒點，且是 VS COM 模式，電腦會自動點擊
+                        if (roundActive && gameMode === "COM") {
+                            handlePlayerClick(null, 'B', true);
+                        }
+                    }
+                }, 1000);
+            }, 2000);
+        }
+
+        function handlePlayerClick(event, player, isCom = false) {
+            // 如果已經結束或不是活動回合，忽略點擊
             if (!roundActive) return;
+            
+            // 如果是真人玩家 A，但遊戲設定為電腦，則忽略（防止玩家亂點 B）
+            if (player === 'B' && !isCom) return;
 
             const isPlayerA = (player === 'A');
-            const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
             const effect = isPlayerA ? hitEffectA : hitEffectB;
             const cardData = isPlayerA ? cardA_Data : cardB_Data;
-            
-            const rect = container.getBoundingClientRect();
-            
-            let displayX = (event.clientX - rect.left) / rect.width;
-            let displayY = (event.clientY - rect.top) / rect.height;
 
-            effect.style.left = `${displayX * 100}%`;
-            effect.style.top = `${displayY * 100}%`;
+            // 處理點擊座標
+            if (!isCom) {
+                const container = isPlayerA ? document.getElementById('cardContainerA') : document.getElementById('cardContainerB');
+                const rect = container.getBoundingClientRect();
+                
+                let displayX = (event.clientX - rect.left) / rect.width;
+                let displayY = (event.clientY - rect.top) / rect.height;
 
-            let clickX, clickY;
-            if (isPlayerA) {
-                clickX = displayY;
-                clickY = 1 - displayX;
+                effect.style.left = `${displayX * 100}%`;
+                effect.style.top = `${displayY * 100}%`;
+
+                let clickX, clickY;
+                if (isPlayerA) {
+                    clickX = displayY;
+                    clickY = 1 - displayX;
+                } else {
+                    clickX = 1 - displayY;
+                    clickY = displayX;
+                }
+
+                let hitHotspot = null;
+                let minDistance = Infinity;
+                let wrongHit = false;
+
+                cardData.hotspots.forEach((spot) => {
+                    const dx = clickX - spot.x;
+                    const dy = clickY - spot.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist <= spot.r && dist < minDistance) {
+                        minDistance = dist;
+                        hitHotspot = spot;
+                    }
+                });
+
+                if (!hitHotspot) return; 
+                effect.style.width = `${hitHotspot.r * 2 * 100}%`; 
+
+                // 判定對錯
+                if (hitHotspot.word === commonWord) {
+                    winRound(isPlayerA, effect);
+                } else {
+                    handleWrong(isPlayerA, effect);
+                }
+
             } else {
-                clickX = 1 - displayY;
-                clickY = displayX;
+                // 電腦自動點擊正確答案
+                const correctSpot = cardData.hotspots.find(h => h.word === commonWord);
+                if (correctSpot) {
+                    // 簡單計算一下反向旋轉的視覺位置
+                    let displayX = 1 - correctSpot.y;
+                    let displayY = correctSpot.x;
+                    effect.style.left = `${displayX * 100}%`;
+                    effect.style.top = `${displayY * 100}%`;
+                    effect.style.width = `${correctSpot.r * 2 * 100}%`;
+                    winRound(false, effect);
+                }
+            }
+        }
+
+        function winRound(isPlayerA, effect) {
+            effect.className = 'hit-effect correct';
+            roundActive = false;
+            countdownTimer.style.display = 'none';
+            clearInterval(countdownInterval);
+            clearTimeout(comTimeout);
+
+            speakWord(commonWord);
+
+            if(audioCtx) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = 800; 
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
             }
 
-            let hitHotspot = null;
-            let minDistance = Infinity;
-
-            cardData.hotspots.forEach((spot) => {
-                const dx = clickX - spot.x;
-                const dy = clickY - spot.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist <= spot.r && dist < minDistance) {
-                    minDistance = dist;
-                    hitHotspot = spot;
-                }
-            });
-
-            if (!hitHotspot) return; 
-
-            effect.style.width = `${hitHotspot.r * 2 * 100}%`; 
-
-            if (hitHotspot.word === commonWord) {
-                effect.className = 'hit-effect correct';
-                roundActive = false;
+            let points = 1;
+            let comboMsg = "";
+            
+            if (isPlayerA) {
+                comboA++;
+                comboB = 0; // 重置對手連擊
+                mistakesA = 0; // 重置自己的錯誤計數
                 
-                speakWord(commonWord);
-                
-                if(audioCtx) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.value = 800; 
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.1);
+                if (comboA >= 3 && comboA % 3 === 0) {
+                    points += 3;
+                    comboMsg = `<div style="color:#f1c40f; font-size:2rem;">🔥 COMBO X3! +3 Points!</div>`;
+                    // 播放 Combo 特效音效 (可選)
                 }
                 
-                let winnerText = isPlayerA ? "🎉 Player A Scores!" : "🎉 Player B Scores!";
+                scoreA += points;
+                scoreAElem.innerText = scoreA;
+                
+                let winnerText = "🎉 Player A Scores!";
+                showCenterMsg(winnerText, comboMsg);
+            } else {
+                comboB++;
+                comboA = 0;
+                mistakesB = 0;
+                
+                if (comboB >= 3 && comboB % 3 === 0) {
+                    points += 3;
+                    comboMsg = `<div style="color:#f1c40f; font-size:2rem;">🔥 COMBO X3! +3 Points!</div>`;
+                }
+                
+                scoreB += points;
+                scoreBElem.innerText = scoreB;
+                
+                let winnerText = gameMode === "COM" ? "🤖 Computer Scores!" : "🎉 Player B Scores!";
+                showCenterMsg(winnerText, comboMsg);
+            }
+
+            setTimeout(() => { 
+                centerMsg.style.display = 'none'; 
+                nextRound(); 
+            }, 2500);
+        }
+
+        function handleWrong(isPlayerA, effect) {
+            effect.className = 'hit-effect wrong';
+            
+            if(audioCtx) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sawtooth';
+                osc.frequency.value = 200;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+            
+            setTimeout(() => { effect.className = 'hit-effect'; }, 500);
+
+            // 處理錯誤懲罰
+            let penaltyMsg = "";
+            if (isPlayerA) {
+                mistakesA++;
+                comboA = 0; // 錯誤會中斷連擊
+                
+                if (mistakesA >= 3) {
+                    scoreA = Math.max(0, scoreA - 1); // 扣 1 分，最低 0 分
+                    scoreAElem.innerText = scoreA;
+                    mistakesA = 0; // 重置
+                    penaltyMsg = `<div style="color:#e74c3c; font-size:1.5rem;">❌ 3 Mistakes -1 Point!</div>`;
+                }
+            } else {
+                mistakesB++;
+                comboB = 0;
+                
+                if (mistakesB >= 3) {
+                    scoreB = Math.max(0, scoreB - 1);
+                    scoreBElem.innerText = scoreB;
+                    mistakesB = 0;
+                    penaltyMsg = `<div style="color:#e74c3c; font-size:1.5rem;">❌ 3 Mistakes -1 Point!</div>`;
+                }
+            }
+
+            if (penaltyMsg) {
+                let loserText = isPlayerA ? "Player A" : (gameMode === "COM" ? "Computer" : "Player B");
                 centerMsg.innerHTML = `
-                    ${winnerText}
-                    <div class="word-display" onclick="speakWord('${commonWord}')">${commonWord}</div>
+                    <div>${loserText} Penalized</div>
+                    ${penaltyMsg}
                 `;
                 centerMsg.style.display = 'block';
-                
-                if (isPlayerA) {
-                    scoreA++; scoreAElem.innerText = scoreA;
-                } else {
-                    scoreB++; scoreBElem.innerText = scoreB;
-                }
-                
                 setTimeout(() => { 
-                    centerMsg.style.display = 'none'; 
-                    nextRound(); 
-                }, 3000);
-            } else {
-                effect.className = 'hit-effect wrong';
-                
-                if(audioCtx) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sawtooth';
-                    osc.frequency.value = 200;
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.2);
-                }
-                
-                setTimeout(() => { effect.className = 'hit-effect'; }, 500);
+                    if(roundActive) centerMsg.style.display = 'none'; // 如果已經有人得分，不要蓋掉得分畫面
+                }, 1500);
             }
+        }
+
+        function showCenterMsg(title, extra) {
+            centerMsg.innerHTML = `
+                ${title}
+                <div class="word-display" onclick="speakWord('${commonWord}')">${commonWord}</div>
+                ${extra}
+            `;
+            centerMsg.style.display = 'block';
         }
 
         window.speakWord = speakWord;
