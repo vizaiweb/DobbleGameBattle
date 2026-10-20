@@ -173,6 +173,7 @@
     <script>
         let currentCards = [];
         let imageBaseUrl = "";
+        let imageExtension = ".png"; // 預設圖檔副檔名，會自動偵測
         let commonWord = "";
         let scoreA = 0, scoreB = 0;
         let roundActive = false;
@@ -304,20 +305,39 @@
 
         async function init() {
             try {
+                // 這裡直接讀取預設的主題
                 const res = await fetch('sets/Common_knowledge_NF.json');
                 const data = await res.json();
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData;
                 
+                // 🚀 智能偵測圖檔副檔名
+                await detectImageExtension();
+
                 preloadImages();
                 nextRound();
             } catch (e) { console.error("Failed to load JSON", e); }
         }
 
+        // 🚀 智能偵測：先試 .png，失敗試 .jpeg
+        function detectImageExtension() {
+            return new Promise((resolve) => {
+                const testImg = new Image();
+                testImg.onload = () => { imageExtension = ".png"; resolve(); };
+                testImg.onerror = () => {
+                    const testImgJpeg = new Image();
+                    testImgJpeg.onload = () => { imageExtension = ".jpeg"; resolve(); };
+                    testImgJpeg.onerror = () => { imageExtension = ".png"; resolve(); }; // 預設回退
+                    testImgJpeg.src = `${imageBaseUrl}1.jpeg`;
+                };
+                testImg.src = `${imageBaseUrl}1.png`;
+            });
+        }
+
         function preloadImages() {
             for (let i = 0; i < currentCards.length; i++) {
                 const img = new Image();
-                img.src = `${imageBaseUrl}${i + 1}.png`;
+                img.src = `${imageBaseUrl}${i + 1}${imageExtension}`;
             }
         }
 
@@ -359,10 +379,10 @@
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
 
-            imgA.src = `${imageBaseUrl}${idxA + 1}.png`;
-            imgB.src = `${imageBaseUrl}${idxB + 1}.png`;
+            // 使用偵測到的副檔名
+            imgA.src = `${imageBaseUrl}${idxA + 1}${imageExtension}`;
+            imgB.src = `${imageBaseUrl}${idxB + 1}${imageExtension}`;
 
-            // 重置特效
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
 
@@ -530,12 +550,9 @@
             }, 2500);
         }
 
-        // 🌟 修正後的雙邊亮綠光邏輯
         function highlightBothCorrectSpots() {
-            // Player A (旋轉 90 度)
             const spotA = cardA_Data.hotspots.find(h => h.word === commonWord);
             if (spotA) {
-                // 玩家 A 的點擊反轉公式
                 let displayX_A = 1 - spotA.y;
                 let displayY_A = spotA.x;
                 hitEffectA.style.left = `${displayX_A * 100}%`;
@@ -544,10 +561,8 @@
                 hitEffectA.className = 'hit-effect correct';
             }
 
-            // Player B (旋轉 -90 度)
             const spotB = cardB_Data.hotspots.find(h => h.word === commonWord);
             if (spotB) {
-                // 玩家 B 的點擊反轉公式
                 let displayX_B = spotB.y;
                 let displayY_B = 1 - spotB.x;
                 hitEffectB.style.left = `${displayX_B * 100}%`;
