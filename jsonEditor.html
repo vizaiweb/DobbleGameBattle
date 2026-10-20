@@ -2,19 +2,22 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Dobble JSON 編輯器</title>
+    <title>Dobble JSON 修改器</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
+        /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
         
+        /* 回到遊戲按鈕 */
         .back-btn { position: absolute; top: 20px; left: 20px; background: #e09d32; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; }
         .back-btn:hover { background: #d18d22; }
 
         .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
+        /* 熱區顯示 */
         .hotspot { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             border: 2px dashed rgba(0, 150, 255, 0.6); background: rgba(0, 150, 255, 0.1);
@@ -24,8 +27,10 @@
         .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
         .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
 
+        /* 右側控制列 */
         .sidebar { width: 480px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
+        /* 可折疊的設定區塊 */
         .settings-toggle {
             background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
@@ -92,7 +97,7 @@
                     <span class="slider-val" id="radiusVal">0.12</span>
                 </div>
             </div>
-            <button id="exportBtn" disabled>💾 下載 JSON</button>
+            <button id="exportBtn" disabled>💾 下載完美 JSON</button>
         </div>
 
         <div class="json-section">
@@ -107,11 +112,15 @@
         let rawData = null;
         let wordBank = [];
         let imageBaseUrl = "";
+        let imageExtension = ".png"; 
+        let localImages = {};
+
         let perfectHotspots = [
             { x: 0.190, y: 0.189, r: 0.12 }, { x: 0.501, y: 0.190, r: 0.12 }, { x: 0.808, y: 0.192, r: 0.12 },
             { x: 0.189, y: 0.500, r: 0.12 }, { x: 0.498, y: 0.628, r: 0.17 }, { x: 0.809, y: 0.500, r: 0.12 },
             { x: 0.187, y: 0.810, r: 0.12 }, { x: 0.812, y: 0.811, r: 0.12 }
         ];
+
         let currentCardIdx = 0;
 
         const settingsToggle = document.getElementById('settingsToggle');
@@ -121,54 +130,92 @@
             settingsContent.classList.toggle('collapsed');
         });
 
+        // 🚀 自動偵測副檔名
+        function detectImageExtension() {
+            return new Promise((resolve) => {
+                const testImg = new Image();
+                testImg.onload = () => { imageExtension = ".png"; resolve(); };
+                testImg.onerror = () => {
+                    const testImgJpeg = new Image();
+                    testImgJpeg.onload = () => { imageExtension = ".jpeg"; resolve(); };
+                    testImgJpeg.onerror = () => {
+                        const testImgJpg = new Image();
+                        testImgJpg.onload = () => { imageExtension = ".jpg"; resolve(); };
+                        testImgJpg.onerror = () => { imageExtension = ".png"; resolve(); }; 
+                        testImgJpg.src = `${imageBaseUrl}1.jpg`;
+                    };
+                    testImgJpeg.src = `${imageBaseUrl}1.jpeg`;
+                };
+                testImg.src = `${imageBaseUrl}1.png`;
+            });
+        }
+
         function generatePreview() {
             if (!rawData) return;
+            
             const finalCards = rawData.cardsData.map((card, i) => {
+                // 🚀 兼容處理：如果卡片是舊的陣列格式，轉成物件；如果是新的物件格式，保留
                 const indices = Array.isArray(card) ? card : card.words;
                 const words = indices.map(idx => wordBank[idx]);
+                
                 const newHotspots = perfectHotspots.map((spot, hIndex) => ({
                     word: words[hIndex],
                     x: Number(spot.x.toFixed(3)),
                     y: Number(spot.y.toFixed(3)),
                     r: Number(spot.r.toFixed(3))
                 }));
+
                 if (Array.isArray(card)) {
                     return { cardId: i + 1, words: indices, hotspots: newHotspots };
                 } else {
                     return { ...card, words: indices, hotspots: newHotspots };
                 }
             });
+
             const finalJson = { ...rawData, cardsData: finalCards };
             document.getElementById('previewJson').value = JSON.stringify(finalJson, null, 4);
         }
 
-        document.getElementById('jsonUpload').addEventListener('change', (e) => {
+        document.getElementById('jsonUpload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                rawData = JSON.parse(ev.target.result);
-                wordBank = rawData.wordBank;
-                imageBaseUrl = rawData.imageBaseUrl;
-                const select = document.getElementById('cardSelect');
-                select.innerHTML = '';
-                rawData.cardsData.forEach((_, i) => {
-                    const opt = document.createElement('option');
-                    opt.value = i;
-                    opt.textContent = `卡片 ${i + 1}`;
-                    select.appendChild(opt);
-                });
-                select.style.display = 'block';
-                select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
-                document.getElementById('exportBtn').disabled = false;
-                loadCard(0);
+            reader.onload = async (ev) => {
+                try {
+                    rawData = JSON.parse(ev.target.result);
+                    wordBank = rawData.wordBank;
+                    imageBaseUrl = rawData.imageBaseUrl;
+                    
+                    // 自動偵測圖片格式
+                    await detectImageExtension();
+
+                    const select = document.getElementById('cardSelect');
+                    select.innerHTML = '';
+                    rawData.cardsData.forEach((_, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.textContent = `卡片 ${i + 1}`;
+                        select.appendChild(opt);
+                    });
+                    select.style.display = 'block';
+                    select.addEventListener('change', (e) => loadCard(parseInt(e.target.value)));
+                    
+                    document.getElementById('exportBtn').disabled = false;
+                    loadCard(0);
+                } catch (err) {
+                    alert("上傳的 JSON 檔案格式有誤，請確認檔案內容。");
+                    console.error(err);
+                }
             };
             reader.readAsText(file);
         });
 
         function loadCard(index) {
             currentCardIdx = index;
-            const fileName = `${index + 1}.png`;
+            const fileName = `${index + 1}${imageExtension}`;
+            
+            // 使用偵測到的副檔名載入圖片
             document.getElementById('cardImg').src = imageBaseUrl + fileName;
+
             const container = document.getElementById('dotsContainer');
             container.innerHTML = '';
             perfectHotspots.forEach((spot, i) => {
@@ -184,6 +231,7 @@
                 });
                 container.appendChild(div);
             });
+
             document.getElementById('editPanel').classList.remove('active');
             generatePreview(); 
         }
@@ -192,11 +240,15 @@
             document.querySelectorAll('.hotspot').forEach((el, i) => el.classList.toggle('active', i === posIndex));
             document.getElementById('editPanel').classList.add('active');
             document.getElementById('posIndex').innerText = posIndex;
+
             const wordSelect = document.getElementById('wordSelect');
             const currentCard = rawData.cardsData[currentCardIdx];
+            
+            // 🚀 兼容處理
             const indices = Array.isArray(currentCard) ? currentCard : currentCard.words;
             const currentIdxInCard = indices[posIndex];
             const currentWord = wordBank[currentIdxInCard];
+
             wordSelect.innerHTML = '';
             wordBank.forEach(w => {
                 const opt = document.createElement('option');
@@ -205,26 +257,34 @@
                 if (w === currentWord) opt.selected = true;
                 wordSelect.appendChild(opt);
             });
+
             wordSelect.onchange = (e) => {
                 const newWord = e.target.value;
                 const newIndex = wordBank.indexOf(newWord);
+                
+                // 🚀 兼容處理：修改時同步更新原始記憶體
                 if (Array.isArray(rawData.cardsData[currentCardIdx])) {
                     rawData.cardsData[currentCardIdx][posIndex] = newIndex;
                 } else {
                     rawData.cardsData[currentCardIdx].words[posIndex] = newIndex;
                 }
+                
                 generatePreview(); 
             };
+
             const radiusSlider = document.getElementById('radiusSlider');
             const radiusVal = document.getElementById('radiusVal');
             radiusSlider.value = perfectHotspots[posIndex].r;
             radiusVal.innerText = perfectHotspots[posIndex].r.toFixed(2);
+
             radiusSlider.oninput = (e) => {
                 const newR = parseFloat(e.target.value);
                 perfectHotspots[posIndex].r = newR;
                 radiusVal.innerText = newR.toFixed(2);
+                
                 const activeDot = document.querySelector(`.hotspot.active`);
                 if (activeDot) activeDot.style.width = `${newR * 2 * 100}%`;
+                
                 generatePreview();
             };
         }
