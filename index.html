@@ -17,6 +17,22 @@
         #start-overlay h1 { font-size: 2.5rem; margin: 0 0 10px 0; color: #e09d32; }
         #start-overlay p { color: #aaa; font-size: 1.1rem; margin-bottom: 20px;}
 
+        /* 🆕 主題選擇下拉選單 */
+        .theme-selection {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .theme-selection label { font-size: 1.2rem; font-weight: bold; color: #ccc; }
+        #themeSelect {
+            padding: 10px 20px; font-size: 1.2rem; font-weight: bold;
+            background: #333; color: white; border: 2px solid #555; border-radius: 10px;
+            cursor: pointer; outline: none;
+        }
+        #themeSelect:hover { background: #444; }
+        #themeSelect option { background: #222; color: white; }
+
         .mode-selection { display: flex; gap: 20px; margin-bottom: 30px; }
         .mode-btn {
             padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
@@ -109,6 +125,15 @@
 
     <div id="start-overlay">
         <h1>Dobble Battle</h1>
+        
+        <!-- 🆕 主題選擇 -->
+        <div class="theme-selection">
+            <label>Theme:</label>
+            <select id="themeSelect">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
         <p>Select Game Mode & Rounds</p>
         
         <div class="mode-selection">
@@ -173,7 +198,7 @@
     <script>
         let currentCards = [];
         let imageBaseUrl = "";
-        let imageExtension = ".png"; // 預設圖檔副檔名，會自動偵測
+        let imageExtension = ".png"; 
         let commonWord = "";
         let scoreA = 0, scoreB = 0;
         let roundActive = false;
@@ -199,6 +224,7 @@
         const centerMsg = document.getElementById('centerMsg');
         const countdownTimer = document.getElementById('countdownTimer');
         const roundDisplay = document.getElementById('roundDisplay');
+        const themeSelect = document.getElementById('themeSelect');
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
@@ -229,6 +255,25 @@
             if (window.speechSynthesis.paused) window.speechSynthesis.resume();
             window.speechSynthesis.speak(utterance);
         }
+
+        // 🆕 初始化主題選單
+        async function loadThemes() {
+            try {
+                const res = await fetch('sets/index.json');
+                const data = await res.json();
+                themeSelect.innerHTML = '';
+                data.availableSets.forEach(set => {
+                    const opt = document.createElement('option');
+                    opt.value = set.id;
+                    opt.textContent = set.name;
+                    themeSelect.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("Failed to load themes", e);
+                themeSelect.innerHTML = '<option value="Common_knowledge_NF">Default Theme</option>';
+            }
+        }
+        loadThemes();
 
         document.getElementById('modeBattle').addEventListener('click', () => {
             gameMode = "BATTLE";
@@ -305,13 +350,13 @@
 
         async function init() {
             try {
-                // 這裡直接讀取預設的主題
-                const res = await fetch('sets/Common_knowledge_NF.json');
+                // 讀取目前選擇的主題
+                const selectedTheme = themeSelect.value;
+                const res = await fetch(`sets/${selectedTheme}.json`);
                 const data = await res.json();
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData;
                 
-                // 🚀 智能偵測圖檔副檔名
                 await detectImageExtension();
 
                 preloadImages();
@@ -319,7 +364,6 @@
             } catch (e) { console.error("Failed to load JSON", e); }
         }
 
-        // 🚀 智能偵測：先試 .png，失敗試 .jpeg
         function detectImageExtension() {
             return new Promise((resolve) => {
                 const testImg = new Image();
@@ -327,7 +371,7 @@
                 testImg.onerror = () => {
                     const testImgJpeg = new Image();
                     testImgJpeg.onload = () => { imageExtension = ".jpeg"; resolve(); };
-                    testImgJpeg.onerror = () => { imageExtension = ".png"; resolve(); }; // 預設回退
+                    testImgJpeg.onerror = () => { imageExtension = ".png"; resolve(); }; 
                     testImgJpeg.src = `${imageBaseUrl}1.jpeg`;
                 };
                 testImg.src = `${imageBaseUrl}1.png`;
@@ -379,7 +423,6 @@
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
 
-            // 使用偵測到的副檔名
             imgA.src = `${imageBaseUrl}${idxA + 1}${imageExtension}`;
             imgB.src = `${imageBaseUrl}${idxB + 1}${imageExtension}`;
 
