@@ -53,11 +53,11 @@
         }
         #startBtn:active { transform: translateY(6px); box-shadow: 0 0 0 #2E7D32; }
 
-        /* 🚀 齒輪按鈕 */
+        /* 🚀 齒輪按鈕 (往左移，避開右上角的重新開始鍵) */
         .settings-btn { 
-            position: absolute; top: 20px; right: 20px; z-index: 40; 
+            position: absolute; top: 20px; right: 85px; z-index: 40; 
             background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); 
-            color: white; font-size: 1.8rem; width: 50px; height: 50px; 
+            color: white; font-size: 1.5rem; width: 50px; height: 50px; 
             border-radius: 50%; display: flex; align-items: center; justify-content: center; 
             cursor: pointer; transition: 0.3s; text-decoration: none;
         }
@@ -402,7 +402,6 @@
             return null;
         }
 
-        // 暴力解法：每次載入圖片時，依序嘗試所有可能的副檔名
         function loadImageWithFallback(imgElement, idx) {
             const extensions = [".png", ".jpeg", ".jpg"];
             let currentExtIndex = 0;
