@@ -355,7 +355,6 @@
             } catch (e) { console.error("Failed to load JSON", e); }
         }
 
-        // 🚀 升級版：支援 .png, .jpeg, .jpg
         function detectImageExtension() {
             return new Promise((resolve) => {
                 const testImg = new Image();
@@ -390,6 +389,32 @@
             return null;
         }
 
+        // 🚀 暴力解法：每次載入圖片時，依序嘗試所有可能的副檔名
+        function loadImageWithFallback(imgElement, idx) {
+            const extensions = [".png", ".jpeg", ".jpg"];
+            let currentExtIndex = 0;
+
+            function tryNext() {
+                if (currentExtIndex >= extensions.length) {
+                    console.error(`❌ 找不到圖片 (已嘗試所有格式): ${idx + 1}`);
+                    imgElement.onerror = null; // 避免無限迴圈
+                    return;
+                }
+                
+                const ext = extensions[currentExtIndex];
+                imgElement.src = `${imageBaseUrl}${idx + 1}${ext}`;
+
+                imgElement.onerror = () => {
+                    currentExtIndex++;
+                    tryNext();
+                };
+                imgElement.onload = () => {
+                    imgElement.onerror = null; // 載入成功，清除錯誤監聽
+                };
+            }
+            tryNext();
+        }
+
         function nextRound() {
             if (currentRound >= maxRounds) {
                 roundActive = false;
@@ -420,11 +445,9 @@
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
 
-            imgA.onerror = () => console.error(`❌ 找不到圖片: ${imgA.src}`);
-            imgB.onerror = () => console.error(`❌ 找不到圖片: ${imgB.src}`);
-
-            imgA.src = `${imageBaseUrl}${idxA + 1}${imageExtension}`;
-            imgB.src = `${imageBaseUrl}${idxB + 1}${imageExtension}`;
+            // 使用暴力偵測載入圖片
+            loadImageWithFallback(imgA, idxA);
+            loadImageWithFallback(imgB, idxB);
 
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
