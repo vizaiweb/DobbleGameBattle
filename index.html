@@ -17,7 +17,6 @@
         #start-overlay h1 { font-size: 2.5rem; margin: 0 0 10px 0; color: #e09d32; }
         #start-overlay p { color: #aaa; font-size: 1.1rem; margin-bottom: 20px;}
 
-        /* 🆕 主題選擇下拉選單 */
         .theme-selection {
             margin-bottom: 30px;
             display: flex;
@@ -126,7 +125,6 @@
     <div id="start-overlay">
         <h1>Dobble Battle</h1>
         
-        <!-- 🆕 主題選擇 -->
         <div class="theme-selection">
             <label>Theme:</label>
             <select id="themeSelect">
@@ -256,7 +254,6 @@
             window.speechSynthesis.speak(utterance);
         }
 
-        // 🆕 初始化主題選單
         async function loadThemes() {
             try {
                 const res = await fetch('sets/index.json');
@@ -350,7 +347,6 @@
 
         async function init() {
             try {
-                // 讀取目前選擇的主題
                 const selectedTheme = themeSelect.value;
                 const res = await fetch(`sets/${selectedTheme}.json`);
                 const data = await res.json();
@@ -422,6 +418,10 @@
             currentIdxB = idxB;
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
+
+            // 🚀 加入防破圖監聽
+            imgA.onerror = () => console.error(`❌ 找不到圖片: ${imgA.src}`);
+            imgB.onerror = () => console.error(`❌ 找不到圖片: ${imgB.src}`);
 
             imgA.src = `${imageBaseUrl}${idxA + 1}${imageExtension}`;
             imgB.src = `${imageBaseUrl}${idxB + 1}${imageExtension}`;
