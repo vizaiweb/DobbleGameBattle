@@ -53,6 +53,16 @@
         }
         #startBtn:active { transform: translateY(6px); box-shadow: 0 0 0 #2E7D32; }
 
+        /* 🚀 齒輪按鈕 */
+        .settings-btn { 
+            position: absolute; top: 20px; right: 20px; z-index: 40; 
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); 
+            color: white; font-size: 1.8rem; width: 50px; height: 50px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: 0.3s; text-decoration: none;
+        }
+        .settings-btn:hover { transform: rotate(90deg); background: rgba(0,0,0,0.8); }
+
         .game-controls {
             position: absolute; top: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; z-index: 50; pointer-events: none;
         }
@@ -154,6 +164,9 @@
         <h2>Please Rotate Your Device</h2>
         <p style="color:#aaa;">This game requires landscape mode.</p>
     </div>
+
+    <!-- 🚀 齒輪按鈕 (跳轉到 jsonEditor.html) -->
+    <a href="jsonEditor.html" class="settings-btn" title="Edit JSON">⚙️</a>
 
     <div class="game-controls">
         <button class="ctrl-btn" id="exitBtn" title="Exit to Menu">❌</button>
@@ -389,7 +402,7 @@
             return null;
         }
 
-        // 🚀 暴力解法：每次載入圖片時，依序嘗試所有可能的副檔名
+        // 暴力解法：每次載入圖片時，依序嘗試所有可能的副檔名
         function loadImageWithFallback(imgElement, idx) {
             const extensions = [".png", ".jpeg", ".jpg"];
             let currentExtIndex = 0;
@@ -397,7 +410,7 @@
             function tryNext() {
                 if (currentExtIndex >= extensions.length) {
                     console.error(`❌ 找不到圖片 (已嘗試所有格式): ${idx + 1}`);
-                    imgElement.onerror = null; // 避免無限迴圈
+                    imgElement.onerror = null; 
                     return;
                 }
                 
@@ -409,7 +422,7 @@
                     tryNext();
                 };
                 imgElement.onload = () => {
-                    imgElement.onerror = null; // 載入成功，清除錯誤監聽
+                    imgElement.onerror = null; 
                 };
             }
             tryNext();
@@ -445,7 +458,6 @@
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
 
-            // 使用暴力偵測載入圖片
             loadImageWithFallback(imgA, idxA);
             loadImageWithFallback(imgB, idxB);
 
