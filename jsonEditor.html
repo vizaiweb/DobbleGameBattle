@@ -7,17 +7,20 @@
         * { box-sizing: border-box; user-select: none; }
         body { margin: 0; display: flex; font-family: sans-serif; background: #1a1a1a; color: white; height: 100vh; overflow: hidden; }
         
-        /* 左側畫布 */
         .workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; }
         
-        /* 回到遊戲按鈕 */
-        .back-btn { position: absolute; top: 20px; left: 20px; background: #e09d32; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-weight: bold; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.2s; }
-        .back-btn:hover { background: #d18d22; }
+        .back-btn { 
+            position: absolute; top: 20px; left: 20px; 
+            background: #e09d32; color: white; padding: 10px 20px; 
+            border-radius: 5px; text-decoration: none; font-weight: bold; 
+            z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+            transition: 0.2s; cursor: pointer; border: none; font-size: 1rem;
+        }
+        .back-btn:hover { background: #d18d22; transform: scale(1.05); }
 
         .card-container { position: relative; width: 80vh; max-width: 95vw; aspect-ratio: 1/1; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
         .card-img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 熱區顯示 */
         .hotspot { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; 
             border: 2px dashed rgba(0, 150, 255, 0.6); background: rgba(0, 150, 255, 0.1);
@@ -27,10 +30,8 @@
         .hotspot:hover { background: rgba(0, 150, 255, 0.4); border-color: #00aaff; }
         .hotspot.active { background: rgba(255, 235, 59, 0.5); border-color: #ffeb3b; color: white; text-shadow: 1px 1px 2px black; }
 
-        /* 右側控制列 */
         .sidebar { width: 480px; background: #222; display: flex; flex-direction: column; border-left: 2px solid #444; height: 100vh; }
         
-        /* 可折疊的設定區塊 */
         .settings-toggle {
             background: #333; color: #e09d32; padding: 15px; font-size: 1.1rem; font-weight: bold;
             cursor: pointer; display: flex; justify-content: space-between; align-items: center;
@@ -72,7 +73,7 @@
 <body>
 
     <div class="workspace">
-        <a href="index.html" class="back-btn">🎮 回到遊戲</a>
+        <button class="back-btn" onclick="window.location.href='index.html'">🎮 回到遊戲</button>
         <div class="card-container" id="cardContainer">
             <img id="cardImg" class="card-img" src="" alt="Card">
             <div id="dotsContainer"></div>
@@ -112,7 +113,6 @@
         let rawData = null;
         let wordBank = [];
         let imageBaseUrl = "";
-        let imageExtension = ".png"; 
         let localImages = {};
 
         let perfectHotspots = [
@@ -130,31 +130,36 @@
             settingsContent.classList.toggle('collapsed');
         });
 
-        // 🚀 自動偵測副檔名
-        function detectImageExtension() {
-            return new Promise((resolve) => {
-                const testImg = new Image();
-                testImg.onload = () => { imageExtension = ".png"; resolve(); };
-                testImg.onerror = () => {
-                    const testImgJpeg = new Image();
-                    testImgJpeg.onload = () => { imageExtension = ".jpeg"; resolve(); };
-                    testImgJpeg.onerror = () => {
-                        const testImgJpg = new Image();
-                        testImgJpg.onload = () => { imageExtension = ".jpg"; resolve(); };
-                        testImgJpg.onerror = () => { imageExtension = ".png"; resolve(); }; 
-                        testImgJpg.src = `${imageBaseUrl}1.jpg`;
-                    };
-                    testImgJpeg.src = `${imageBaseUrl}1.jpeg`;
+        // 🚀 智能載入圖片：依序嘗試 .png, .jpeg, .jpg
+        function loadImageWithFallback(imgElement, idx) {
+            const extensions = [".png", ".jpeg", ".jpg"];
+            let currentExtIndex = 0;
+
+            function tryNext() {
+                if (currentExtIndex >= extensions.length) {
+                    console.error(`❌ 找不到圖片 (已嘗試所有格式): ${idx + 1}`);
+                    imgElement.onerror = null; 
+                    return;
+                }
+                
+                const ext = extensions[currentExtIndex];
+                imgElement.src = `${imageBaseUrl}${idx + 1}${ext}`;
+
+                imgElement.onerror = () => {
+                    currentExtIndex++;
+                    tryNext();
                 };
-                testImg.src = `${imageBaseUrl}1.png`;
-            });
+                imgElement.onload = () => {
+                    imgElement.onerror = null; 
+                };
+            }
+            tryNext();
         }
 
         function generatePreview() {
             if (!rawData) return;
             
             const finalCards = rawData.cardsData.map((card, i) => {
-                // 🚀 兼容處理：如果卡片是舊的陣列格式，轉成物件；如果是新的物件格式，保留
                 const indices = Array.isArray(card) ? card : card.words;
                 const words = indices.map(idx => wordBank[idx]);
                 
@@ -184,9 +189,6 @@
                     rawData = JSON.parse(ev.target.result);
                     wordBank = rawData.wordBank;
                     imageBaseUrl = rawData.imageBaseUrl;
-                    
-                    // 自動偵測圖片格式
-                    await detectImageExtension();
 
                     const select = document.getElementById('cardSelect');
                     select.innerHTML = '';
@@ -211,10 +213,9 @@
 
         function loadCard(index) {
             currentCardIdx = index;
-            const fileName = `${index + 1}${imageExtension}`;
             
-            // 使用偵測到的副檔名載入圖片
-            document.getElementById('cardImg').src = imageBaseUrl + fileName;
+            // 使用智能讀取圖片
+            loadImageWithFallback(document.getElementById('cardImg'), index);
 
             const container = document.getElementById('dotsContainer');
             container.innerHTML = '';
@@ -244,7 +245,6 @@
             const wordSelect = document.getElementById('wordSelect');
             const currentCard = rawData.cardsData[currentCardIdx];
             
-            // 🚀 兼容處理
             const indices = Array.isArray(currentCard) ? currentCard : currentCard.words;
             const currentIdxInCard = indices[posIndex];
             const currentWord = wordBank[currentIdxInCard];
@@ -262,7 +262,6 @@
                 const newWord = e.target.value;
                 const newIndex = wordBank.indexOf(newWord);
                 
-                // 🚀 兼容處理：修改時同步更新原始記憶體
                 if (Array.isArray(rawData.cardsData[currentCardIdx])) {
                     rawData.cardsData[currentCardIdx][posIndex] = newIndex;
                 } else {
