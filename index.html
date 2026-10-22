@@ -8,13 +8,11 @@
         * { box-sizing: border-box; user-select: none; touch-action: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; }
         
-        /* 🚀 開始頁面 (自適應設計) */
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: white; text-align: center; padding: 20px;
-            overflow-y: auto;
+            color: white; text-align: center; padding: 20px; overflow-y: auto;
         }
         #start-overlay h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin: 0 0 10px 0; color: #e09d32; }
         #start-overlay p { color: #aaa; font-size: clamp(0.9rem, 3vw, 1.1rem); margin-bottom: 20px;}
@@ -38,7 +36,6 @@
         .mode-btn:hover { transform: scale(1.05); background: #444; }
         .mode-btn.selected { background: #4CAF50; border-color: #2E7D32; box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); }
 
-        /* 🚀 自定義滑桿區塊 */
         .round-slider-box {
             width: 100%; max-width: 400px; margin-bottom: 30px; background: #222; padding: 20px;
             border-radius: 15px; border: 1px solid #444;
@@ -48,10 +45,7 @@
         }
         #roundValueDisplay { color: #4CAF50; font-size: 1.5rem; }
         
-        /* 美化滑桿 */
-        input[type=range] {
-            -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer;
-        }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; cursor: pointer; }
         input[type=range]:focus { outline: none; }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%; height: 12px; cursor: pointer; background: #555; border-radius: 10px;
@@ -67,14 +61,11 @@
         #startBtn {
             padding: 15px 50px; font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: bold;
             background: #4CAF50; color: white; border: none; border-radius: 15px;
-            cursor: pointer; box-shadow: 0 6px 0 #2E7D32; transition: 0.1s;
-            margin-bottom: 20px;
+            cursor: pointer; box-shadow: 0 6px 0 #2E7D32; transition: 0.1s; margin-bottom: 20px;
         }
         #startBtn:active { transform: translateY(6px); box-shadow: 0 0 0 #2E7D32; }
 
-        .top-right-controls {
-            position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 40;
-        }
+        .top-right-controls { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 40; }
         .settings-btn { 
             background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.2); 
             color: white; font-size: 1.5rem; width: 50px; height: 50px; 
@@ -118,36 +109,22 @@
         .player-area.right .card-rotator { transform: rotate(-90deg); }
         .card-rotator img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
         
-        /* 🚀 點擊回饋特效 (正確改為淺藍色) */
         .hit-effect { 
             position: absolute; aspect-ratio: 1/1; border-radius: 50%; pointer-events: none; 
             opacity: 0; transition: opacity 0.2s; border: 4px solid #fff; 
             box-shadow: 0 0 15px rgba(0,0,0,0.5); z-index: 5; transform: translate(-50%, -50%); 
         }
-        /* 答對：淺藍色 */
-        .hit-effect.correct { 
-            background: rgba(135, 206, 250, 0.8); /* Light Sky Blue */
-            opacity: 1; 
-            border-color: #00BFFF; /* Deep Sky Blue */
-        }
-        /* 答錯：紅色 (保留) */
-        .hit-effect.wrong { 
-            background: rgba(231, 76, 60, 0.8); 
-            opacity: 1; 
-            border-color: #e74c3c; 
-        }
+        .hit-effect.correct { background: rgba(135, 206, 250, 0.8); opacity: 1; border-color: #00BFFF; }
+        .hit-effect.wrong { background: rgba(231, 76, 60, 0.8); opacity: 1; border-color: #e74c3c; }
 
         .center-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background: rgba(0,0,0,0.9); color: #fff; padding: 30px 60px; border-radius: 25px; 
             font-size: 1.8rem; font-weight: bold; display: none; z-index: 20; text-align: center; 
-            box-shadow: 0 15px 40px rgba(0,0,0,0.7); border: 3px solid #e09d32; 
-            pointer-events: auto;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7); border: 3px solid #e09d32; pointer-events: auto;
         }
-        /* 🚀 彈出的正確單字也改為淺藍色 */
         .center-message .word-display { 
-            font-size: 3rem; color: #87CEEB; /* Light Sky Blue */
-            margin: 15px 0; text-transform: uppercase; letter-spacing: 2px; 
+            font-size: 3rem; color: #87CEEB; margin: 15px 0; text-transform: uppercase; letter-spacing: 2px; 
             cursor: pointer; transition: 0.2s;
         }
         .center-message .word-display:hover { transform: scale(1.05); }
@@ -386,19 +363,42 @@
                 imageBaseUrl = data.imageBaseUrl;
                 currentCards = data.cardsData;
                 
-                preloadImages();
+                // 🚀 強化預加載：把所有可能抽到的圖片全部下載到記憶體
+                await preloadAllImages(); 
+                
                 nextRound();
             } catch (e) { console.error("Failed to load JSON", e); }
         }
 
-        function preloadImages() {
-            for (let i = 0; i < currentCards.length; i++) {
-                const extList = [".png", ".jpeg", ".jpg"];
-                extList.forEach(ext => {
+        // 🚀 強化版預加載：回傳 Promise 確保全部載入完畢才開始遊戲
+        function preloadAllImages() {
+            return new Promise((resolve) => {
+                let loadedCount = 0;
+                const total = currentCards.length;
+                if (total === 0) return resolve();
+
+                for (let i = 0; i < total; i++) {
                     const img = new Image();
-                    img.src = `${imageBaseUrl}${i + 1}${ext}`;
-                });
-            }
+                    img.onload = img.onerror = () => {
+                        loadedCount++;
+                        if (loadedCount === total) resolve();
+                    };
+                    // 先嘗試 .png，再嘗試 .jpeg，再嘗試 .jpg
+                    img.src = `${imageBaseUrl}${i + 1}.png`;
+                    if (img.onerror) {
+                        img.onerror = () => {
+                            img.src = `${imageBaseUrl}${i + 1}.jpeg`;
+                            img.onerror = () => {
+                                img.src = `${imageBaseUrl}${i + 1}.jpg`;
+                                img.onerror = () => {
+                                    loadedCount++;
+                                    if (loadedCount === total) resolve();
+                                };
+                            };
+                        };
+                    }
+                }
+            });
         }
 
         function findCommonWord(cardA, cardB) {
@@ -409,27 +409,35 @@
             return null;
         }
 
-        function loadImageWithFallback(imgElement, idx) {
+        // 🚀 雙重緩衝區載入圖片：解決換卡延遲
+        function loadImageWithFallback(imgElement, idx, callback) {
             const extensions = [".png", ".jpeg", ".jpg"];
             let currentExtIndex = 0;
 
             function tryNext() {
                 if (currentExtIndex >= extensions.length) {
-                    console.error(`❌ 找不到圖片 (已嘗試所有格式): ${idx + 1}`);
+                    console.error(`❌ 找不到圖片: ${idx + 1}`);
                     imgElement.onerror = null; 
+                    if(callback) callback();
                     return;
                 }
                 
                 const ext = extensions[currentExtIndex];
-                imgElement.src = `${imageBaseUrl}${idx + 1}${ext}`;
+                const newSrc = `${imageBaseUrl}${idx + 1}${ext}`;
 
-                imgElement.onerror = () => {
+                // 建立一個臨時圖片物件，在背景加載
+                const tempImg = new Image();
+                tempImg.onload = () => {
+                    // 加載完成後，瞬間替換畫面上的圖片
+                    imgElement.src = newSrc;
+                    imgElement.onerror = null;
+                    if(callback) callback();
+                };
+                tempImg.onerror = () => {
                     currentExtIndex++;
                     tryNext();
                 };
-                imgElement.onload = () => {
-                    imgElement.onerror = null; 
-                };
+                tempImg.src = newSrc;
             }
             tryNext();
         }
@@ -464,19 +472,26 @@
             cardA_Data = currentCards[idxA];
             cardB_Data = currentCards[idxB];
 
-            loadImageWithFallback(imgA, idxA);
-            loadImageWithFallback(imgB, idxB);
-
+            // 重置特效
             hitEffectA.className = 'hit-effect';
             hitEffectB.className = 'hit-effect';
 
-            roundActive = true;
-            
-            if (gameMode === "COM") {
-                startCountdown();
-            } else {
-                countdownTimer.style.display = 'none';
-            }
+            // 🚀 使用雙重緩衝載入，確保兩張圖都載好才開始
+            let loadedCount = 0;
+            const onImgLoaded = () => {
+                loadedCount++;
+                if (loadedCount === 2) {
+                    roundActive = true;
+                    if (gameMode === "COM") {
+                        startCountdown();
+                    } else {
+                        countdownTimer.style.display = 'none';
+                    }
+                }
+            };
+
+            loadImageWithFallback(imgA, idxA, onImgLoaded);
+            loadImageWithFallback(imgB, idxB, onImgLoaded);
         }
 
         function startCountdown() {
